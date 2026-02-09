@@ -4,7 +4,7 @@ import React, { useState } from "react";
 const Navbar = () => {
   const [expanded, setExpanded] = useState(false);
   return (
-    <header className="py-4 md:py-6 ">
+    <header className="py-2 md:py-3">
       <div className="container px-4 mx-auto sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <div className="shrink-0">
@@ -14,7 +14,7 @@ const Navbar = () => {
               className="flex rounded outline-none focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
             >
               <img
-                className="w-auto h-12"
+                className="w-auto h-6"
                 src="brand_images/hackorg_banner.png"
                 alt=""
               />
@@ -30,7 +30,7 @@ const Navbar = () => {
             >
               {!expanded ? (
                 <svg
-                  className="w-7 h-7"
+                  className="w-6 h-6"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -45,7 +45,7 @@ const Navbar = () => {
                 </svg>
               ) : (
                 <svg
-                  className="w-7 h-7"
+                  className="w-6 h-6"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -61,11 +61,11 @@ const Navbar = () => {
               )}
             </button>
           </div>
-          <div className="hidden lg:flex lg:ml-16 lg:items-center lg:justify-center lg:space-x-10 xl:space-x-16">
+          <div className="hidden lg:flex lg:ml-8 lg:items-center lg:justify-center lg:space-x-10 xl:space-x-6">
             <a
               href="#"
               title=""
-              className="text-base font-medium text-gray-900 transition-all duration-200 rounded focus:outline-none font-pj hover:text-opacity-50 focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
+              className="text-sm font-medium text-gray-900 transition-all duration-200 rounded focus:outline-none font-pj hover:text-opacity-50 focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
             >
               {" "}
               Hackathon Tools{" "}
@@ -73,7 +73,7 @@ const Navbar = () => {
             <a
               href="#"
               title=""
-              className="text-base font-medium text-gray-900 transition-all duration-200 rounded focus:outline-none font-pj hover:text-opacity-50 focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
+              className="text-sm font-medium text-gray-900 transition-all duration-200 rounded focus:outline-none font-pj hover:text-opacity-50 focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
             >
               {" "}
               For Organizers{" "}
@@ -81,7 +81,7 @@ const Navbar = () => {
             <a
               href="#"
               title=""
-              className="text-base font-medium text-gray-900 transition-all duration-200 rounded focus:outline-none font-pj hover:text-opacity-50 focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
+              className="text-sm font-medium text-gray-900 transition-all duration-200 rounded focus:outline-none font-pj hover:text-opacity-50 focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
             >
               {" "}
               Automation{" "}
@@ -92,7 +92,7 @@ const Navbar = () => {
             <a
               href="/login"
               title=""
-              className="inline-flex items-center justify-center px-6 py-3 text-base font-bold leading-7 text-white transition-all duration-200 bg-gray-900 border border-transparent rounded-xl hover:bg-gray-600 font-pj focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-bold text-white transition-all duration-200 bg-gray-900 border border-transparent rounded-2xl hover:bg-gray-600 font-pj focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
               role="button"
             >
               Sign up
@@ -102,12 +102,12 @@ const Navbar = () => {
         {/* Mobile menu */}
         {expanded && (
           <nav>
-            <div className="px-1 py-8">
+            <div className="px-1 py-8 shadow-xl">
               <div className="grid gap-y-7">
                 <a
                   href="#"
                   title=""
-                  className="flex items-center p-3 -m-3 text-base font-medium text-gray-900 transition-all duration-200 rounded-xl hover:bg-gray-50 focus:outline-none font-pj focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
+                  className="flex items-center p-3 -m-3 text-sm font-medium text-gray-900 transition-all duration-200 rounded-xl hover:bg-gray-50 focus:outline-none font-pj focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
                 >
                   {" "}
                   Hackathon Tools{" "}
@@ -115,7 +115,7 @@ const Navbar = () => {
                 <a
                   href="#"
                   title=""
-                  className="flex items-center p-3 -m-3 text-base font-medium text-gray-900 transition-all duration-200 rounded-xl hover:bg-gray-50 focus:outline-none font-pj focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
+                  className="flex items-center p-3 -m-3 text-sm font-medium text-gray-900 transition-all duration-200 rounded-xl hover:bg-gray-50 focus:outline-none font-pj focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
                 >
                   {" "}
                   For Organizers{" "}
@@ -123,7 +123,7 @@ const Navbar = () => {
                 <a
                   href="#"
                   title=""
-                  className="flex items-center p-3 -m-3 text-base font-medium text-gray-900 transition-all duration-200 rounded-xl hover:bg-gray-50 focus:outline-none font-pj focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
+                  className="flex items-center p-3 -m-3 text-sm font-medium text-gray-900 transition-all duration-200 rounded-xl hover:bg-gray-50 focus:outline-none font-pj focus:ring-1 focus:ring-gray-900 focus:ring-offset-2"
                 >
                   {" "}
                   Automation{" "}
@@ -132,7 +132,7 @@ const Navbar = () => {
                 <a
                   href="/login"
                   title=""
-                  className="inline-flex items-center justify-center px-6 py-3 text-base font-bold leading-7 text-white transition-all duration-200 bg-gray-900 border border-transparent rounded-xl hover:bg-gray-600 font-pj focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+                  className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white transition-all duration-200 bg-gray-900 border border-transparent rounded-xl hover:bg-gray-600 font-pj focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
                   role="button"
                 >
                   Sign up

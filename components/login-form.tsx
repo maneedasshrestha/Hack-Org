@@ -1,62 +1,63 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldSeparator,
-} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { Iconify } from "@/components/iconify";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
-      <FieldGroup>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Login to your account</h1>
-          <p className="text-muted-foreground text-sm text-balance">
-            Enter your email below to login to your account
-          </p>
-        </div>
-        <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+    <form className={cn("flex flex-col gap-4", className)} {...props}>
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <label htmlFor="email" className="text-sm font-medium leading-none">
+            Email
+          </label>
           <Input
             id="email"
             type="email"
-            placeholder="abc@example.com"
+            placeholder="name@example.com"
             required
+            className="h-6"
           />
-        </Field>
-        <Field>
-          <div className="flex items-center">
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <a
-              href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor="password"
+              className="text-sm font-medium leading-none"
             >
-              Forgot your password?
-            </a>
+              Password
+            </label>
+            <Link
+              href="#"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Forgot?
+            </Link>
           </div>
-          <Input id="password" type="password" required />
-        </Field>
-        <Field>
-          <Button type="submit">
-            <a href="/dashboard">Login</a>
-          </Button>
-        </Field>
-        <Field>
-          <FieldDescription className="text-center">
-            Don&apos;t have an account?{" "}
-            <a href="/signup" className="underline underline-offset-4">
-              Sign up
-            </a>
-          </FieldDescription>
-        </Field>
-      </FieldGroup>
+          <Input id="password" type="password" required className="h-6" />
+        </div>
+      </div>
+
+      <Button type="submit" className="w-full h-7 mt-1">
+        Sign In
+      </Button>
+
+      <p className="text-center text-sm text-muted-foreground mt-2">
+        Don&apos;t have an account?{" "}
+        <Link
+          href="/signup"
+          className="font-medium text-primary hover:underline"
+        >
+          Sign up
+        </Link>
+      </p>
     </form>
   );
 }
