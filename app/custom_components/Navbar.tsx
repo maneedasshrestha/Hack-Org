@@ -4,7 +4,7 @@ import React, { useState } from "react";
 const Navbar = () => {
   const [expanded, setExpanded] = useState(false);
   return (
-    <header className="py-4 md:py-6">
+    <header className="py-4 md:py-6 ">
       <div className="container px-4 mx-auto sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <div className="shrink-0">

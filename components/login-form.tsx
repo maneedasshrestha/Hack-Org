@@ -44,7 +44,9 @@ export function LoginForm({
           <Input id="password" type="password" required />
         </Field>
         <Field>
-          <Button type="submit">Login</Button>
+          <Button type="submit">
+            <a href="/dashboard">Login</a>
+          </Button>
         </Field>
         <Field>
           <FieldDescription className="text-center">
