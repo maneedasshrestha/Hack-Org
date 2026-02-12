@@ -58,6 +58,12 @@ export function AccountPopover({
     [handleClosePopover, router],
   );
 
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("token"); // Remove JWT
+    handleClosePopover();
+    router.push("/login"); // Redirect to login page
+  }, [handleClosePopover, router]);
+
   return (
     <>
       <IconButton
@@ -141,7 +147,13 @@ export function AccountPopover({
         <Divider sx={{ borderStyle: "dashed" }} />
 
         <Box sx={{ p: 1 }}>
-          <Button fullWidth color="error" size="medium" variant="text">
+          <Button
+            fullWidth
+            color="error"
+            size="medium"
+            variant="text"
+            onClick={handleLogout}
+          >
             Logout
           </Button>
         </Box>
