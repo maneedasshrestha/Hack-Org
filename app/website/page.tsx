@@ -197,7 +197,7 @@ export default function WebsiteBuilderPage() {
     // Store website data in localStorage
     localStorage.setItem('websitePreviewData', JSON.stringify(websiteData));
     // Open preview in new tab
-    window.open('/website/preview', '_blank');
+    window.open('/preview', '_blank');
   };
 
   return (
