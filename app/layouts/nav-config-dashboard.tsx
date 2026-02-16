@@ -19,6 +19,11 @@ export const navData = [
     icon: icon("ic-analytics"),
   },
   {
+    title: "Website",
+    path: "/website",
+    icon: icon("ic-blog"),
+  },
+  {
     title: "Participants",
     path: "/user",
     icon: icon("ic-user"),
@@ -26,7 +31,7 @@ export const navData = [
   {
     title: "Mentors",
     path: "/mentors",
-    icon: icon("ic-cart"),
+    icon: icon("ic-mentor"),
     info: (
       <Label color="error" variant="inverted">
         +3
@@ -39,9 +44,19 @@ export const navData = [
     icon: icon("ic-blog"),
   },
   {
-    title: "Sign in",
-    path: "/sign-in",
-    icon: icon("ic-lock"),
+    title: "Certificate",
+    path: "/certificate",
+    icon: icon("ic-certificate"),
+  },
+  {
+    title: "Mailer",
+    path: "/mail",
+    icon: icon("ic-mail"),
+  },
+  {
+    title: "Countdown",
+    path: "/countdown",
+    icon: icon("ic-time"),
   },
   {
     title: "Not found",
