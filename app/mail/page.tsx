@@ -1,7 +1,8 @@
 import React from "react";
+import MailComponent from "../../components/mailer/MailComponent";
 
 const MailPage = () => {
-  return <div>MailPage</div>;
+  return <MailComponent />;
 };
 
 export default MailPage;
