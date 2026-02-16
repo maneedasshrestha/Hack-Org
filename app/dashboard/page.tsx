@@ -2,6 +2,8 @@
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AnalyticsWidgetSummary } from "../sections/overview/analytics-widget-summary";
 import { AnalyticsCurrentVisits } from "../sections/overview/analytics-current-visits";
 import { AnalyticsWebsiteVisits } from "../sections/overview/analytics-website-visits";
@@ -14,6 +16,28 @@ import { AnalyticsTasks } from "../sections/overview/analytics-tasks";
 import { _posts, _tasks, _timeline, _traffic } from "../_mock";
 
 export function OverviewAnalyticsView() {
+  const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    // This runs only on the client side
+    const storedToken = localStorage.getItem("token");
+
+    if (!storedToken) {
+      // No token, redirect to login
+      router.push("/login");
+      return;
+    }
+
+    setToken(storedToken);
+    console.log("Token:", storedToken);
+  }, [router]);
+
+  // Optional: Show loading while checking auth
+  if (!token) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <>
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
