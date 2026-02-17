@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
 interface HackathonWebsiteData {
   eventName: string;
   tagline: string;
@@ -212,12 +214,133 @@ export default function WebsiteBuilderPage() {
     ), { duration: 10000 });
   };
 
+
+  const saveWebsiteToDatabase = async (shouldPublish = false) => {
+    try {
+      // Get adminId from localStorage or your auth context
+      const adminId = localStorage.getItem('adminId');
+
+      if (!adminId) {
+        toast.error("Please login first", {
+          description: "You need to login to save your website",
+          duration: 4000,
+        });
+        return;
+      }
+
+      const websiteId = localStorage.getItem('currentWebsiteId'); // If editing existing
+
+      console.log('Saving website...', {
+        API_URL,
+        adminId,
+        websiteId,
+        hasWebsiteData: !!websiteData,
+      });
+
+      const payload = {
+        websiteData: normalizeWebsiteData(websiteData),
+        adminId: adminId,
+        websiteId: websiteId || undefined,
+      };
+
+      console.log('Payload:', payload);
+
+      const response = await fetch(`${API_URL}/website/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      console.log('Response status:', response.status, response.statusText);
+
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Non-JSON response received:', await response.text());
+        toast.error("Server error: Invalid response format", {
+          description: "The backend is not returning JSON. Check if the server is running.",
+          duration: 5000,
+        });
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (response.ok) {
+        // Save website ID for future updates
+        localStorage.setItem('currentWebsiteId', data.website.id.toString());
+
+        toast.success("Website saved successfully! 💾", {
+          description: `Website ID: ${data.website.id}`,
+          duration: 3000,
+        });
+
+        // If should publish, call publish endpoint
+        if (shouldPublish) {
+          await publishWebsiteToDatabase(data.website.id);
+        }
+
+        return data.website;
+      } else {
+        const errorMessage = data.error || data.details || "Failed to save website";
+        console.error('Server error:', errorMessage, data);
+        toast.error(errorMessage, {
+          description: data.details ? `Details: ${data.details}` : undefined,
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error("Error saving website:", error);
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        toast.error("Cannot connect to backend server", {
+          description: `Make sure the backend is running at ${API_URL}`,
+          duration: 5000,
+        });
+      } else {
+        toast.error("Network error. Please try again.", {
+          description: error instanceof Error ? error.message : String(error),
+          duration: 5000,
+        });
+      }
+    }
+  };
+  const publishWebsiteToDatabase = async (websiteId: number) => {
+    try {
+      const response = await fetch(`${API_URL}/website/${websiteId}/publish`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Website published! 🎉", {
+          description: `Access at: ${window.location.origin}/${data.website.slug}`,
+          duration: 4000,
+        });
+      } else {
+        toast.error(data.error || "Failed to publish website");
+      }
+    } catch (error) {
+      console.error("Error publishing website:", error);
+      toast.error("Network error. Please try again.");
+    }
+  };
+
+
+
   const handlePublish = async () => {
-    toast.success("Website published! 🎉", {
-      description: "Participants can now access your hackathon website.",
-      duration: 4000,
-    });
-    console.log("Published data:", websiteData);
+    await saveWebsiteToDatabase(true);
+  };
+
+  const handleSaveDraft = async () => {
+    await saveWebsiteToDatabase(false);
   };
 
   const handlePreview = () => {
@@ -226,10 +349,11 @@ export default function WebsiteBuilderPage() {
     toast.info("Preview opened in new tab", { duration: 2000 });
   };
 
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Toaster richColors position="top-right" />
-      
+
       {/* Edit Mode Banner */}
       <AnimatePresence>
         {editMode && (
@@ -252,17 +376,16 @@ export default function WebsiteBuilderPage() {
       {/* Floating Action Buttons */}
       <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-3">
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button 
+          <Button
             onClick={() => {
               setEditMode(!editMode);
               toast.success(editMode ? "Edit mode disabled" : "Edit mode enabled", { duration: 2000 });
             }}
             size="sm"
-            className={`shadow-lg ${
-              editMode 
-                ? "bg-[#1877F2] hover:bg-[#0C44AE] text-white" 
-                : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-2 border-gray-400 hover:bg-gray-900 hover:text-white"
-            }`}
+            className={`shadow-lg ${editMode
+              ? "bg-[#1877F2] hover:bg-[#0C44AE] text-white"
+              : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-2 border-gray-400 hover:bg-gray-900 hover:text-white"
+              }`}
           >
             {editMode ? (
               <span className="flex items-center gap-2">
@@ -277,8 +400,8 @@ export default function WebsiteBuilderPage() {
           </Button>
         </motion.div>
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button 
-            onClick={handlePreview} 
+          <Button
+            onClick={handlePreview}
             size="sm"
             className="shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-2 border-gray-400 hover:bg-gray-900 hover:text-white hover:border-gray-900"
           >
@@ -299,6 +422,18 @@ export default function WebsiteBuilderPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             Publish
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            onClick={handleSaveDraft}
+            className="bg-blue-600 hover:bg-blue-700 shadow-lg text-white"
+            size="sm"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            Save Draft
           </Button>
         </motion.div>
       </div>
@@ -359,7 +494,7 @@ function EditableText({
   if (isCurrentlyEditing) {
     if (multiline) {
       return (
-        <motion.div 
+        <motion.div
           initial={{ scale: 0.98, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="relative"
@@ -405,13 +540,11 @@ function EditableText({
           arrayIndex,
           arrayKey
         ) : undefined}
-      className={`${
-        className
-      } ${
-        editMode 
-          ? "cursor-pointer group relative hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-2 py-1 -mx-2 -my-1 transition-all duration-200" 
+      className={`${className
+        } ${editMode
+          ? "cursor-pointer group relative hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-2 py-1 -mx-2 -my-1 transition-all duration-200"
           : ""
-      }`}
+        }`}
       title={editMode ? "Click to edit" : ""}
     >
       {value || "Click to add text"}
@@ -462,7 +595,7 @@ function HackathonTemplate({
           <div className="flex justify-between items-center h-16">
             {/* Left: Hackathon Name */}
             <div className="flex-shrink-0">
-              <button 
+              <button
                 onClick={() => scrollToSection('hero')}
                 className="text-xl font-bold text-gray-900 dark:text-white hover:text-[#1877F2] dark:hover:text-[#1877F2] transition-colors"
               >
@@ -484,7 +617,7 @@ function HackathonTemplate({
               >
                 Prize Pool
               </button>
-              
+
               <button
                 onClick={() => scrollToSection('faqs')}
                 className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -543,7 +676,7 @@ function HackathonTemplate({
               >
                 Highlights
               </button>
-              
+
               <button
                 onClick={() => scrollToSection('faqs')}
                 className="block w-full text-left px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -566,7 +699,7 @@ function HackathonTemplate({
       {/* Hero Section */}
       <section id="hero" className="relative overflow-hidden bg-white dark:bg-gray-900 py-20 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <motion.h1 
+          <motion.h1
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6 }}
@@ -587,7 +720,7 @@ function HackathonTemplate({
               editMode={editMode}
             />
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.1 }}
@@ -608,7 +741,7 @@ function HackathonTemplate({
               editMode={editMode}
             />
           </motion.p>
-          <motion.p 
+          <motion.p
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -631,7 +764,7 @@ function HackathonTemplate({
               editMode={editMode}
             />
           </motion.p>
-          <motion.div 
+          <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
@@ -696,7 +829,7 @@ function HackathonTemplate({
       {/* Prizes Section */}
       <section id="prizes" className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-6xl mx-auto px-6">
-          <motion.h2 
+          <motion.h2
             initial={{ y: 20, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             viewport={{ once: true }}
@@ -747,7 +880,7 @@ function HackathonTemplate({
       {/* FAQs Section */}
       <section id="faqs" className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-4xl mx-auto px-6">
-          <motion.h2 
+          <motion.h2
             initial={{ y: 20, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             viewport={{ once: true }}
@@ -757,8 +890,8 @@ function HackathonTemplate({
           </motion.h2>
           <div className="space-y-6">
             {(data.faqs || []).map((faq: any, idx: number) => (
-              <motion.div 
-                key={idx} 
+              <motion.div
+                key={idx}
                 initial={{ y: 20, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 viewport={{ once: true }}
@@ -832,7 +965,7 @@ function HackathonTemplate({
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <motion.div 
+          <motion.div
             initial={{ y: 20, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             viewport={{ once: true }}
@@ -842,9 +975,9 @@ function HackathonTemplate({
               {data.eventName}
             </h3>
           </motion.div>
-          
+
           {Object.keys(data.socialLinks || {}).some(key => (data.socialLinks as any)[key]) && (
-            <motion.div 
+            <motion.div
               initial={{ y: 20, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               viewport={{ once: true }}
@@ -868,8 +1001,8 @@ function HackathonTemplate({
               )}
             </motion.div>
           )}
-          
-          <motion.p 
+
+          <motion.p
             initial={{ y: 20, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             viewport={{ once: true }}
