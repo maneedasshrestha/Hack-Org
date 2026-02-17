@@ -36,6 +36,30 @@ interface HackathonWebsiteData {
   };
 }
 
+// Normalize data to ensure all required fields are present and valid
+function normalizeWebsiteData(data: any): HackathonWebsiteData {
+  return {
+    eventName: data?.eventName || "Hackathon 2026",
+    tagline: data?.tagline || "Build. Create. Innovate.",
+    description: data?.description || "Join us for 48 hours of innovation and collaboration!",
+    date: data?.date || "March 15-17, 2026",
+    location: data?.location || "Virtual / Hybrid",
+    prizes: {
+      first: data?.prizes?.first || "$5,000",
+      second: data?.prizes?.second || "$3,000",
+      third: data?.prizes?.third || "$1,000",
+    },
+    schedule: Array.isArray(data?.schedule) ? data.schedule : [],
+    faqs: Array.isArray(data?.faqs) ? data.faqs : [],
+    socialLinks: {
+      twitter: data?.socialLinks?.twitter || "",
+      linkedin: data?.socialLinks?.linkedin || "",
+      discord: data?.socialLinks?.discord || "",
+      github: data?.socialLinks?.github || "",
+    },
+  };
+}
+
 export default function WebsitePreviewPage() {
   const [websiteData, setWebsiteData] = useState<HackathonWebsiteData | null>(null);
 
@@ -43,7 +67,8 @@ export default function WebsitePreviewPage() {
     // Load website data from localStorage
     const storedData = localStorage.getItem('websitePreviewData');
     if (storedData) {
-      setWebsiteData(JSON.parse(storedData));
+      const parsed = JSON.parse(storedData);
+      setWebsiteData(normalizeWebsiteData(parsed));
     }
   }, []);
 
@@ -102,12 +127,7 @@ function HackathonPreview({ data }: { data: HackathonWebsiteData }) {
               >
                 Prize Pool
               </button>
-              <button
-                onClick={() => scrollToSection('schedule')}
-                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                Schedule
-              </button>
+              
               <button
                 onClick={() => scrollToSection('faqs')}
                 className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -166,12 +186,7 @@ function HackathonPreview({ data }: { data: HackathonWebsiteData }) {
               >
                 Prize Pool
               </button>
-              <button
-                onClick={() => scrollToSection('schedule')}
-                className="block w-full text-left px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Schedule
-              </button>
+              
               <button
                 onClick={() => scrollToSection('faqs')}
                 className="block w-full text-left px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -242,65 +257,13 @@ function HackathonPreview({ data }: { data: HackathonWebsiteData }) {
         </div>
       </section>
 
-      {/* Schedule Section */}
-      <section id="schedule" className="py-16 bg-gray-50 dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12">Event Schedule</h2>
-          
-          {/* Days Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {data.schedule.map((day, dayIdx) => (
-              <div
-                key={dayIdx}
-                className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow"
-              >
-                {/* Day Header */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-wide">
-                    {day.day}
-                  </h3>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                    {day.title}
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                    {day.description}
-                  </p>
-                </div>
-
-                {/* Schedule Items */}
-                <div className="space-y-6">
-                  {day.items.map((item, itemIdx) => (
-                    <div key={itemIdx}>
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-                            {item.event}
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {item.location}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            {item.time}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* FAQs Section */}
       <section id="faqs" className="py-16 bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-6">
           <h2 className="text-4xl font-bold text-center mb-12">FAQs</h2>
           <div className="space-y-6">
-            {data.faqs.map((faq, idx) => (
+            {(data.faqs || []).map((faq, idx) => (
               <div key={idx} className="border-b pb-6">
                 <h3 className="text-xl font-semibold mb-2">{faq.question}</h3>
                 <p className="text-muted-foreground">{faq.answer}</p>

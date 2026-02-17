@@ -2,6 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/toaster";
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface HackathonWebsiteData {
   eventName: string;
@@ -14,16 +17,6 @@ interface HackathonWebsiteData {
     second: string;
     third: string;
   };
-  schedule: Array<{
-    day: string;
-    title: string;
-    description: string;
-    items: Array<{
-      time: string;
-      event: string;
-      location: string;
-    }>;
-  }>;
   faqs: Array<{
     question: string;
     answer: string;
@@ -47,40 +40,6 @@ const defaultData: HackathonWebsiteData = {
     second: "$3,000",
     third: "$1,000",
   },
-  schedule: [
-    {
-      day: "Day 1",
-      title: "Codeyatra 2026",
-      description: "Kickoff, onboarding, and team formation.",
-      items: [
-        { time: "09:00", event: "Registration & Check-in", location: "Venue" },
-        { time: "10:30", event: "Opening Ceremony", location: "Main Hall" },
-        { time: "12:00", event: "Problem Briefing", location: "Auditorium" },
-        { time: "13:00", event: "Hackathon Starts", location: "Allocated Seats" },
-      ],
-    },
-    {
-      day: "Day 2",
-      title: "CodeYatra 2026",
-      description: "Build, learn, and collaborate with mentors.",
-      items: [
-        { time: "09:00", event: "Mentor Rounds", location: "Allocated Seats" },
-        { time: "11:30", event: "Mini Session (Engagement Segment)", location: "Activity Space" },
-        { time: "14:00", event: "Project Checkpoint", location: "Allocated Seats" },
-        { time: "18:00", event: "Progress Review", location: "Allocated Seats" },
-      ],
-    },
-    {
-      day: "Day 3",
-      title: "CodeYatra 2026",
-      description: "Polish, present, and celebrate.",
-      items: [
-        { time: "10:00", event: "Submission Deadline", location: "Allocated Seats" },
-        { time: "11:00", event: "Demos & Judging", location: "Main Hall" },
-        { time: "14:30", event: "Awards & Closing", location: "Auditorium" },
-      ],
-    },
-  ],
   faqs: [
     { question: "Who can participate?", answer: "Anyone with a passion for coding!" },
   ],
@@ -92,6 +51,29 @@ const defaultData: HackathonWebsiteData = {
   },
 };
 
+// Normalize data to ensure all required fields are present and valid
+function normalizeWebsiteData(data: any): HackathonWebsiteData {
+  return {
+    eventName: data?.eventName || "Hackathon 2026",
+    tagline: data?.tagline || "Build. Create. Innovate.",
+    description: data?.description || "Join us for 48 hours of innovation and collaboration!",
+    date: data?.date || "March 15-17, 2026",
+    location: data?.location || "Virtual / Hybrid",
+    prizes: {
+      first: data?.prizes?.first || "$5,000",
+      second: data?.prizes?.second || "$3,000",
+      third: data?.prizes?.third || "$1,000",
+    },
+    faqs: Array.isArray(data?.faqs) ? data.faqs : [],
+    socialLinks: {
+      twitter: data?.socialLinks?.twitter || "",
+      linkedin: data?.socialLinks?.linkedin || "",
+      discord: data?.socialLinks?.discord || "",
+      github: data?.socialLinks?.github || "",
+    },
+  };
+}
+
 type EditingField = {
   type: "text" | "textarea" | "nested" | "array";
   path: string;
@@ -102,9 +84,12 @@ type EditingField = {
 } | null;
 
 export default function WebsiteBuilderPage() {
-  const [websiteData, setWebsiteData] = useState<HackathonWebsiteData>(defaultData);
+  const [websiteData, setWebsiteData] = useState<HackathonWebsiteData>(
+    normalizeWebsiteData(defaultData)
+  );
   const [isEditing, setIsEditing] = useState<EditingField>(null);
   const [editValue, setEditValue] = useState("");
+  const [editMode, setEditMode] = useState(true); // Edit mode toggle
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -125,7 +110,14 @@ export default function WebsiteBuilderPage() {
     arrayKey?: string
   ) => {
     setEditValue(value);
-    setIsEditing({ type, path, parent, field, arrayIndex, arrayKey });
+    // Automatically determine the correct type based on parameters
+    let actualType: "text" | "textarea" | "nested" | "array" = type;
+    if (arrayIndex !== undefined && arrayKey) {
+      actualType = "array";
+    } else if (parent && field) {
+      actualType = "nested";
+    }
+    setIsEditing({ type: actualType, path, parent, field, arrayIndex, arrayKey });
   };
 
   const handleSave = () => {
@@ -141,12 +133,14 @@ export default function WebsiteBuilderPage() {
       }));
     } else if (isEditing.type === "array" && isEditing.arrayIndex !== undefined && isEditing.arrayKey) {
       setWebsiteData((prev) => {
-        const array = [...(prev as any)[isEditing.path]];
-        array[isEditing.arrayIndex!] = {
-          ...array[isEditing.arrayIndex!],
+        const currentValue = (prev as any)[isEditing.path];
+        const arrayValue = Array.isArray(currentValue) ? currentValue : [];
+        const newArray = [...arrayValue];
+        newArray[isEditing.arrayIndex!] = {
+          ...newArray[isEditing.arrayIndex!],
           [isEditing.arrayKey!]: editValue,
         };
-        return { ...prev, [isEditing.path]: array };
+        return { ...prev, [isEditing.path]: newArray };
       });
     } else {
       setWebsiteData((prev) => ({
@@ -155,6 +149,7 @@ export default function WebsiteBuilderPage() {
       }));
     }
 
+    toast.success("Changes saved!", { duration: 2000 });
     setIsEditing(null);
     setEditValue("");
   };
@@ -175,54 +170,141 @@ export default function WebsiteBuilderPage() {
   };
 
   const addArrayItem = (field: string, template: any) => {
-    setWebsiteData((prev) => ({
-      ...prev,
-      [field]: [...(prev as any)[field], template],
-    }));
+    setWebsiteData((prev) => {
+      const currentValue = (prev as any)[field];
+      const arrayValue = Array.isArray(currentValue) ? currentValue : [];
+      return {
+        ...prev,
+        [field]: [...arrayValue, template],
+      };
+    });
+    toast.success("Item added!", { duration: 2000 });
   };
 
   const removeArrayItem = (field: string, index: number) => {
-    setWebsiteData((prev) => ({
-      ...prev,
-      [field]: (prev as any)[field].filter((_: any, i: number) => i !== index),
-    }));
+    const toastId = toast.custom((t) => (
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700">
+        <p className="font-medium mb-3 text-gray-900 dark:text-white">Delete this item?</p>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => {
+              setWebsiteData((prev) => {
+                const currentValue = (prev as any)[field];
+                const arrayValue = Array.isArray(currentValue) ? currentValue : [];
+                return {
+                  ...prev,
+                  [field]: arrayValue.filter((_: any, i: number) => i !== index),
+                };
+              });
+              toast.dismiss(t);
+              toast.success("Item deleted");
+            }}
+          >
+            Delete
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => toast.dismiss(t)}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    ), { duration: 10000 });
   };
 
   const handlePublish = async () => {
-    alert("Website published! Participants can now access it.");
+    toast.success("Website published! 🎉", {
+      description: "Participants can now access your hackathon website.",
+      duration: 4000,
+    });
     console.log("Published data:", websiteData);
   };
 
   const handlePreview = () => {
-    // Store website data in localStorage
-    localStorage.setItem('websitePreviewData', JSON.stringify(websiteData));
-    // Open preview in new tab
+    localStorage.setItem('websitePreviewData', JSON.stringify(normalizeWebsiteData(websiteData)));
     window.open('/preview', '_blank');
+    toast.info("Preview opened in new tab", { duration: 2000 });
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Toaster richColors position="top-right" />
+      
+      {/* Edit Mode Banner */}
+      <AnimatePresence>
+        {editMode && (
+          <motion.div
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            className="fixed top-0 left-0 right-0 z-50 bg-[#1877F2] text-white py-2 px-4 text-center text-sm font-medium shadow-lg"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+              </svg>
+              Edit Mode Active - Click on any text to edit
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating Action Buttons */}
       <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-3">
-        <Button 
-          onClick={handlePreview} 
-          variant="outline" 
-          size="sm"
-          className="shadow-lg bg-white dark:bg-gray-800"
-        >
-          Preview
-        </Button>
-        <Button
-          onClick={handlePublish}
-          className="bg-white hover:bg-gray-100 shadow-lg text-black"
-          size="sm"
-        >
-          Publish Website
-        </Button>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button 
+            onClick={() => {
+              setEditMode(!editMode);
+              toast.success(editMode ? "Edit mode disabled" : "Edit mode enabled", { duration: 2000 });
+            }}
+            size="sm"
+            className={`shadow-lg ${
+              editMode 
+                ? "bg-[#1877F2] hover:bg-[#0C44AE] text-white" 
+                : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-2 border-gray-400 hover:bg-gray-900 hover:text-white"
+            }`}
+          >
+            {editMode ? (
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+                Editing
+              </span>
+            ) : (
+              "Enable Edit"
+            )}
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button 
+            onClick={handlePreview} 
+            size="sm"
+            className="shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-2 border-gray-400 hover:bg-gray-900 hover:text-white hover:border-gray-900"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            Preview
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            onClick={handlePublish}
+            className="bg-gray-900 hover:bg-gray-700 shadow-lg text-white"
+            size="sm"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Publish
+          </Button>
+        </motion.div>
       </div>
 
-      {/* Canvas Area - No top padding needed, starts from top */}
-      <div className="pb-8">
+      {/* Canvas Area */}
+      <div className={`pb-8 transition-all duration-300 ${editMode ? 'pt-12' : 'pt-0'}`}>
         <div className="max-w-7xl mx-auto">
           <HackathonTemplate
             data={websiteData}
@@ -239,6 +321,7 @@ export default function WebsiteBuilderPage() {
             removeArrayItem={removeArrayItem}
             inputRef={inputRef}
             textareaRef={textareaRef}
+            editMode={editMode}
           />
         </div>
       </div>
@@ -265,6 +348,7 @@ function EditableText({
   field,
   arrayIndex,
   arrayKey,
+  editMode = true,
 }: any) {
   const isCurrentlyEditing =
     isEditing &&
@@ -275,7 +359,11 @@ function EditableText({
   if (isCurrentlyEditing) {
     if (multiline) {
       return (
-        <div className="relative">
+        <motion.div 
+          initial={{ scale: 0.98, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="relative"
+        >
           <textarea
             ref={textareaRef}
             value={editValue}
@@ -284,28 +372,30 @@ function EditableText({
             onKeyDown={(e) => {
               if (e.key === "Escape") onCancel();
             }}
-            className={`${className} border-2 border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-2 rounded min-h-[100px] w-full`}
+            className={`${className} border-2 border-[#1877F2] shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-3 rounded-lg min-h-[100px] w-full focus:border-[#0C44AE] transition-all`}
           />
-        </div>
+        </motion.div>
       );
     }
 
     return (
-      <input
+      <motion.input
+        initial={{ scale: 0.98, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         ref={inputRef}
         type="text"
         value={editValue}
         onChange={(e) => setEditValue(e.target.value)}
         onBlur={onSave}
         onKeyDown={onKeyDown}
-        className={`${className} border-2 border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-2 py-1 rounded`}
+        className={`${className} border-2 border-[#1877F2] shadow-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 rounded-lg focus:border-[#0C44AE] transition-all`}
       />
     );
   }
 
   return (
     <span
-      onDoubleClick={() =>
+      onClick={editMode ? () =>
         onDoubleClick(
           path,
           value,
@@ -314,12 +404,24 @@ function EditableText({
           field,
           arrayIndex,
           arrayKey
-        )
-      }
-      className={`${className} cursor-text hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:outline hover:outline-2 hover:outline-blue-300 dark:hover:outline-blue-700 rounded px-1 transition-all`}
-      title="Double-click to edit"
+        ) : undefined}
+      className={`${
+        className
+      } ${
+        editMode 
+          ? "cursor-pointer group relative hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-2 py-1 -mx-2 -my-1 transition-all duration-200" 
+          : ""
+      }`}
+      title={editMode ? "Click to edit" : ""}
     >
-      {value || "Double-click to add text"}
+      {value || "Click to add text"}
+      {editMode && (
+        <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center">
+          <svg className="w-3 h-3 text-[#1877F2]" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          </svg>
+        </span>
+      )}
     </span>
   );
 }
@@ -340,6 +442,7 @@ function HackathonTemplate({
   removeArrayItem,
   inputRef,
   textareaRef,
+  editMode,
 }: any) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -352,16 +455,16 @@ function HackathonTemplate({
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 shadow-2xl">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Navbar */}
-      <nav className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <nav className="sticky top-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Left: Hackathon Name */}
             <div className="flex-shrink-0">
               <button 
                 onClick={() => scrollToSection('hero')}
-                className="text-xl font-bold text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="text-xl font-bold text-gray-900 dark:text-white hover:text-[#1877F2] dark:hover:text-[#1877F2] transition-colors"
               >
                 {data.eventName}
               </button>
@@ -381,12 +484,7 @@ function HackathonTemplate({
               >
                 Prize Pool
               </button>
-              <button
-                onClick={() => scrollToSection('schedule')}
-                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                Schedule
-              </button>
+              
               <button
                 onClick={() => scrollToSection('faqs')}
                 className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -399,7 +497,7 @@ function HackathonTemplate({
             <div className="hidden md:block">
               <Button
                 size="sm"
-                className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100"
+                className="bg-[#1877F2] hover:bg-[#0C44AE] text-white border-0 shadow-md transition-all"
               >
                 Register Now
               </Button>
@@ -445,12 +543,7 @@ function HackathonTemplate({
               >
                 Highlights
               </button>
-              <button
-                onClick={() => scrollToSection('schedule')}
-                className="block w-full text-left px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Schedule
-              </button>
+              
               <button
                 onClick={() => scrollToSection('faqs')}
                 className="block w-full text-left px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -460,7 +553,7 @@ function HackathonTemplate({
               <div className="px-3 py-2">
                 <Button
                   size="sm"
-                  className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100"
+                  className="w-full bg-[#1877F2] hover:bg-[#0C44AE] text-white border-0"
                 >
                   Register Now
                 </Button>
@@ -471,9 +564,14 @@ function HackathonTemplate({
       </nav>
 
       {/* Hero Section */}
-      <section id="hero" className="bg-white dark:bg-gray-950 text-black py-20 border-b ">
+      <section id="hero" className="relative overflow-hidden bg-white dark:bg-gray-900 py-20 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <h1 className="text-5xl md:text-7xl font-bold mb-4">
+          <motion.h1 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="text-5xl md:text-7xl font-bold mb-4 text-gray-900 dark:text-white"
+          >
             <EditableText
               value={data.eventName}
               path="eventName"
@@ -486,10 +584,15 @@ function HackathonTemplate({
               onKeyDown={handleKeyDown}
               inputRef={inputRef}
               className="text-5xl md:text-7xl font-bold"
-
+              editMode={editMode}
             />
-          </h1>
-          <p className="text-2xl md:text-3xl mb-6 opacity-90">
+          </motion.h1>
+          <motion.p 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-2xl md:text-3xl mb-6 text-gray-600 dark:text-gray-400"
+          >
             <EditableText
               value={data.tagline}
               path="tagline"
@@ -502,9 +605,15 @@ function HackathonTemplate({
               onKeyDown={handleKeyDown}
               inputRef={inputRef}
               className="text-2xl md:text-3xl"
+              editMode={editMode}
             />
-          </p>
-          <p className="text-xl mb-8 opacity-80">
+          </motion.p>
+          <motion.p 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-xl mb-8 text-gray-500 dark:text-gray-400 max-w-3xl mx-auto"
+          >
             <EditableText
               value={data.description}
               path="description"
@@ -519,11 +628,17 @@ function HackathonTemplate({
               textareaRef={textareaRef}
               multiline={true}
               className="text-xl"
+              editMode={editMode}
             />
-          </p>
-          <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-8">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">
+          </motion.p>
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex flex-col md:flex-row gap-4 justify-center items-center mb-10"
+          >
+            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700">
+              <span className="text-lg text-gray-700 dark:text-gray-300">
                 📅{" "}
                 <EditableText
                   value={data.date}
@@ -537,11 +652,12 @@ function HackathonTemplate({
                   onKeyDown={handleKeyDown}
                   inputRef={inputRef}
                   className="text-lg"
+                  editMode={editMode}
                 />
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">
+            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700">
+              <span className="text-lg text-gray-700 dark:text-gray-300">
                 📍{" "}
                 <EditableText
                   value={data.location}
@@ -555,35 +671,56 @@ function HackathonTemplate({
                   onKeyDown={handleKeyDown}
                   inputRef={inputRef}
                   className="text-lg"
+                  editMode={editMode}
                 />
               </span>
             </div>
-          </div>
-          <Button
-            size="lg"
-            className="bg-gray-100 text-black hover:bg-gray-300 text-lg px-8 py-6"
+          </motion.div>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            Register Now
-          </Button>
+            <Button
+              size="lg"
+              className="bg-gray-900 hover:bg-gray-700 text-white text-lg px-10 py-6 rounded-2xl font-bold shadow-xl transition-all"
+            >
+              Register Now
+            </Button>
+          </motion.div>
         </div>
       </section>
 
       {/* Prizes Section */}
-      <section id="prizes" className="py-16 bg-white dark:bg-gray-900">
+      <section id="prizes" className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12">Prize Pool</h2>
+          <motion.h2 
+            initial={{ y: 20, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-4xl font-bold text-center mb-16 text-gray-900 dark:text-white"
+          >
+            Prize Pool
+          </motion.h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { title: "🥇 First Prize", key: "first", amount: data.prizes.first },
               { title: "🥈 Second Prize", key: "second", amount: data.prizes.second },
               { title: "🥉 Third Prize", key: "third", amount: data.prizes.third },
             ].map((prize, idx) => (
-              <div
+              <motion.div
                 key={idx}
-                className="text-center p-8 rounded-lg border-2 border-primary/20 hover:border-primary/40 transition-all"
+                initial={{ y: 20, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                whileHover={{ y: -5 }}
+                className="text-center p-10 rounded-2xl bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 hover:border-[#1877F2] shadow-lg hover:shadow-xl transition-all"
               >
-                <h3 className="text-2xl font-semibold mb-4">{prize.title}</h3>
-                <p className="text-4xl font-bold text-primary">
+                <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{prize.title}</h3>
+                <p className="text-5xl font-bold text-[#1877F2]">
                   <EditableText
                     value={prize.amount}
                     path="prizes"
@@ -597,262 +734,38 @@ function HackathonTemplate({
                     onCancel={handleCancel}
                     onKeyDown={handleKeyDown}
                     inputRef={inputRef}
-                    className="text-4xl font-bold"
+                    className="text-5xl font-bold"
+                    editMode={editMode}
                   />
                 </p>
-              </div>
+              </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Schedule Section */}
-      <section id="schedule" className="py-16 bg-gray-50 dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12">Event Schedule</h2>
-          
-          {/* Days Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {data.schedule.map((day: any, dayIdx: number) => (
-              <div
-                key={dayIdx}
-                className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-8 relative group hover:shadow-xl transition-shadow"
-              >
-                
-
-                {/* Day Header */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2 uppercase tracking-wide">
-                    <EditableText
-                      value={day.day}
-                      path="schedule"
-                      arrayIndex={dayIdx}
-                      arrayKey="day"
-                      onDoubleClick={handleDoubleClick}
-                      isEditing={isEditing}
-                      editValue={editValue}
-                      setEditValue={setEditValue}
-                      onSave={handleSave}
-                      onCancel={handleCancel}
-                      onKeyDown={handleKeyDown}
-                      inputRef={inputRef}
-                      className="text-sm font-semibold uppercase"
-                    />
-                  </h3>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                    <EditableText
-                      value={day.title}
-                      path="schedule"
-                      arrayIndex={dayIdx}
-                      arrayKey="title"
-                      onDoubleClick={handleDoubleClick}
-                      isEditing={isEditing}
-                      editValue={editValue}
-                      setEditValue={setEditValue}
-                      onSave={handleSave}
-                      onCancel={handleCancel}
-                      onKeyDown={handleKeyDown}
-                      inputRef={inputRef}
-                      className="text-2xl font-bold"
-                    />
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                    <EditableText
-                      value={day.description}
-                      path="schedule"
-                      arrayIndex={dayIdx}
-                      arrayKey="description"
-                      onDoubleClick={handleDoubleClick}
-                      isEditing={isEditing}
-                      editValue={editValue}
-                      setEditValue={setEditValue}
-                      onSave={handleSave}
-                      onCancel={handleCancel}
-                      onKeyDown={handleKeyDown}
-                      inputRef={inputRef}
-                      textareaRef={textareaRef}
-                      multiline={true}
-                      className="text-sm"
-                    />
-                  </p>
-                </div>
-
-                {/* Schedule Items */}
-                <div className="space-y-6">
-                  {day.items.map((item: any, itemIdx: number) => (
-                    <div key={itemIdx} className="relative group/item">
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-                            <EditableText
-                              value={item.event}
-                              path={`schedule-${dayIdx}-items`}
-                              arrayIndex={itemIdx}
-                              arrayKey="event"
-                              onDoubleClick={(path: string, value: string, type: string, parent?: string, field?: string, arrayIndex?: number, arrayKey?: string) => {
-                                handleDoubleClick(path, value, type, parent, field, arrayIndex, arrayKey);
-                              }}
-                              isEditing={isEditing}
-                              editValue={editValue}
-                              setEditValue={setEditValue}
-                              onSave={() => {
-                                if (!isEditing) return;
-                                setWebsiteData((prev: HackathonWebsiteData) => {
-                                  const newSchedule = [...prev.schedule];
-                                  newSchedule[dayIdx].items[itemIdx] = {
-                                    ...newSchedule[dayIdx].items[itemIdx],
-                                    [isEditing.arrayKey!]: editValue,
-                                  };
-                                  return { ...prev, schedule: newSchedule };
-                                });
-                                setIsEditing(null);
-                                setEditValue("");
-                              }}
-                              onCancel={handleCancel}
-                              onKeyDown={handleKeyDown}
-                              inputRef={inputRef}
-                              className="font-semibold text-base"
-                            />
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            <EditableText
-                              value={item.location}
-                              path={`schedule-${dayIdx}-items`}
-                              arrayIndex={itemIdx}
-                              arrayKey="location"
-                              onDoubleClick={(path: string, value: string, type: string, parent?: string, field?: string, arrayIndex?: number, arrayKey?: string) => {
-                                handleDoubleClick(path, value, type, parent, field, arrayIndex, arrayKey);
-                              }}
-                              isEditing={isEditing}
-                              editValue={editValue}
-                              setEditValue={setEditValue}
-                              onSave={() => {
-                                if (!isEditing) return;
-                                setWebsiteData((prev: HackathonWebsiteData) => {
-                                  const newSchedule = [...prev.schedule];
-                                  newSchedule[dayIdx].items[itemIdx] = {
-                                    ...newSchedule[dayIdx].items[itemIdx],
-                                    [isEditing.arrayKey!]: editValue,
-                                  };
-                                  return { ...prev, schedule: newSchedule };
-                                });
-                                setIsEditing(null);
-                                setEditValue("");
-                              }}
-                              onCancel={handleCancel}
-                              onKeyDown={handleKeyDown}
-                              inputRef={inputRef}
-                              className="text-sm"
-                            />
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                            <EditableText
-                              value={item.time}
-                              path={`schedule-${dayIdx}-items`}
-                              arrayIndex={itemIdx}
-                              arrayKey="time"
-                              onDoubleClick={(path: string, value: string, type: string, parent?: string, field?: string, arrayIndex?: number, arrayKey?: string) => {
-                                handleDoubleClick(path, value, type, parent, field, arrayIndex, arrayKey);
-                              }}
-                              isEditing={isEditing}
-                              editValue={editValue}
-                              setEditValue={setEditValue}
-                              onSave={() => {
-                                if (!isEditing) return;
-                                setWebsiteData((prev: HackathonWebsiteData) => {
-                                  const newSchedule = [...prev.schedule];
-                                  newSchedule[dayIdx].items[itemIdx] = {
-                                    ...newSchedule[dayIdx].items[itemIdx],
-                                    [isEditing.arrayKey!]: editValue,
-                                  };
-                                  return { ...prev, schedule: newSchedule };
-                                });
-                                setIsEditing(null);
-                                setEditValue("");
-                              }}
-                              onCancel={handleCancel}
-                              onKeyDown={handleKeyDown}
-                              inputRef={inputRef}
-                              className="text-sm font-medium"
-                            />
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setWebsiteData((prev: HackathonWebsiteData) => {
-                                const newSchedule = [...prev.schedule];
-                                newSchedule[dayIdx].items = newSchedule[dayIdx].items.filter((_: any, i: number) => i !== itemIdx);
-                                return { ...prev, schedule: newSchedule };
-                              });
-                            }}
-                            className="opacity-0 group-hover/item:opacity-100 transition-opacity h-6 w-6 p-0"
-                          >
-                            ✕
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Add Item Button */}
-                  <Button
-                    onClick={() => {
-                      setWebsiteData((prev: HackathonWebsiteData) => {
-                        const newSchedule = [...prev.schedule];
-                        newSchedule[dayIdx].items.push({ time: "", event: "", location: "" });
-                        return { ...prev, schedule: newSchedule };
-                      });
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-4 text-sm"
-                  >
-                    + Add Item
-                  </Button>
-                </div>
-
-                {/* Remove Day Button */}
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => removeArrayItem("schedule", dayIdx)}
-                  className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-                >
-                  Remove Day
-                </Button>
-              </div>
-            ))}
-          </div>
-
-          {/* Add New Day Button */}
-          <div className="text-center">
-            <Button
-              onClick={() => addArrayItem("schedule", { 
-                day: "New Day", 
-                title: "Event Title",
-                description: "Event description",
-                items: [{ time: "", event: "", location: "" }] 
-              })}
-              variant="outline"
-              size="lg"
-            >
-              + Add New Day
-            </Button>
           </div>
         </div>
       </section>
 
       {/* FAQs Section */}
-      <section id="faqs" className="py-16 bg-white dark:bg-gray-900">
+      <section id="faqs" className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12">FAQs</h2>
+          <motion.h2 
+            initial={{ y: 20, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-4xl font-bold text-center mb-16 text-gray-900 dark:text-white"
+          >
+            FAQs
+          </motion.h2>
           <div className="space-y-6">
-            {data.faqs.map((faq: any, idx: number) => (
-              <div key={idx} className="border-b pb-6 group relative">
-                <h3 className="text-xl font-semibold mb-2">
+            {(data.faqs || []).map((faq: any, idx: number) => (
+              <motion.div 
+                key={idx} 
+                initial={{ y: 20, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.05 }}
+                className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-700 group relative transition-all"
+              >
+                <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">
                   <EditableText
                     value={faq.question}
                     path="faqs"
@@ -866,10 +779,11 @@ function HackathonTemplate({
                     onCancel={handleCancel}
                     onKeyDown={handleKeyDown}
                     inputRef={inputRef}
-                    className="text-xl font-semibold"
+                    className="text-xl font-bold"
+                    editMode={editMode}
                   />
                 </h3>
-                <p className="text-muted-foreground">
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                   <EditableText
                     value={faq.answer}
                     path="faqs"
@@ -885,50 +799,85 @@ function HackathonTemplate({
                     inputRef={inputRef}
                     textareaRef={textareaRef}
                     multiline={true}
-                    className="text-muted-foreground"
+                    className="text-base"
+                    editMode={editMode}
                   />
                 </p>
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => removeArrayItem("faqs", idx)}
-                  className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity rounded-full w-8 h-8 p-0 shadow-lg"
                 >
                   ✕
                 </Button>
-              </div>
+              </motion.div>
             ))}
-            <Button
-              onClick={() => addArrayItem("faqs", { question: "", answer: "" })}
-              variant="outline"
-              className="w-full"
-            >
-              + Add FAQ
-            </Button>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                onClick={() => addArrayItem("faqs", { question: "", answer: "" })}
+                variant="outline"
+                className="w-full border-2 border-gray-400 hover:border-gray-900 hover:bg-gray-900 hover:text-white text-gray-900 dark:text-white font-bold py-6 rounded-2xl transition-all"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add FAQ
+              </Button>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8">
+      <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <div className="flex justify-center gap-6 mb-4">
-            {Object.entries(data.socialLinks || {}).map(
-              ([key, url]) =>
-                url ? (
-                  <a
-                    key={key}
-                    href={url as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary capitalize"
-                  >
-                    {key}
-                  </a>
-                ) : null
-            )}
-          </div>
-          <p className="text-sm opacity-70">© 2026 {data.eventName}. All rights reserved.</p>
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="mb-6"
+          >
+            <h3 className="text-2xl font-bold text-white mb-2">
+              {data.eventName}
+            </h3>
+          </motion.div>
+          
+          {Object.keys(data.socialLinks || {}).some(key => (data.socialLinks as any)[key]) && (
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="flex justify-center gap-6 mb-6"
+            >
+              {Object.entries(data.socialLinks || {}).map(
+                ([key, url]) =>
+                  url ? (
+                    <motion.a
+                      key={key}
+                      href={url as string}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ scale: 1.1, y: -2 }}
+                      className="text-gray-400 hover:text-white capitalize font-medium px-3 py-1 rounded transition-colors"
+                    >
+                      {key}
+                    </motion.a>
+                  ) : null
+              )}
+            </motion.div>
+          )}
+          
+          <motion.p 
+            initial={{ y: 20, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="text-sm text-gray-500"
+          >
+            © 2026 {data.eventName}. All rights reserved.
+          </motion.p>
         </div>
       </footer>
     </div>
