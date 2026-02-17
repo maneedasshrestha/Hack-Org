@@ -3,15 +3,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Papa from 'papaparse';
-// import { PdfCanvas } from './pdf-canvas'; // Removed direct import
 const PdfCanvas = dynamic(() => import('./pdf-canvas').then(mod => mod.PdfCanvas), {
     ssr: false,
     loading: () => <div className="flex items-center justify-center h-96 bg-gray-100 text-gray-400">Loading PDF engine...</div>
 });
 import { OverlayLayer } from './overlay-layer';
 import { ControlPanel } from './control-panel';
-import { TextFieldConfig, PdfDimensions } from '@/types';
 import { generateCertificates } from '@/lib/pdf-generation';
+import { PdfDimensions, TextFieldConfig } from '@/app/types';
 
 export function CertificateEditor() {
     // State
@@ -168,7 +167,7 @@ export function CertificateEditor() {
             {/* Sidebar */}
             <ControlPanel
                 config={config}
-                onUpdate={(updates) => setConfig(prev => ({ ...prev, ...updates }))}
+                onUpdate={(updates) => setConfig((prev: any) => ({ ...prev, ...updates }))}
                 onPdfUpload={handlePdfUpload}
                 onCsvUpload={handleCsvUpload}
                 onGenerate={handleGenerate}
@@ -212,7 +211,7 @@ export function CertificateEditor() {
                             {/* Overlay matches container size exactly because container is sized to viewerDimensions */}
                             <OverlayLayer
                                 config={config}
-                                onUpdate={(updates) => setConfig(prev => ({ ...prev, ...updates }))}
+                                onUpdate={(updates) => setConfig((prev: any) => ({ ...prev, ...updates }))}
                                 containerWidth={viewerDimensions.width}
                                 containerHeight={viewerDimensions.height}
                             />
