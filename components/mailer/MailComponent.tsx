@@ -34,11 +34,14 @@ export default function MailPage() {
 
     try {
       // In a real app, use an env var for the API URL
-      const response = await axios.post("http://localhost:5000/api/mail/send", {
-        recipients,
-        subject,
-        message,
-      });
+      const response = await axios.post(
+        "https://hackorgbackend.onrender.com/api/mail/send",
+        {
+          recipients,
+          subject,
+          message,
+        },
+      );
 
       if (response.data.success) {
         setStatus({
