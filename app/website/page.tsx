@@ -92,6 +92,7 @@ export default function WebsiteBuilderPage() {
   const [isEditing, setIsEditing] = useState<EditingField>(null);
   const [editValue, setEditValue] = useState("");
   const [editMode, setEditMode] = useState(true); // Edit mode toggle
+  const [isLoading, setIsLoading] = useState(true); // Loading state for fetching data
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -101,6 +102,66 @@ export default function WebsiteBuilderPage() {
       if (textareaRef.current) textareaRef.current.focus();
     }
   }, [isEditing]);
+
+  // Fetch admin's websites on mount
+  useEffect(() => {
+    const loadAdminWebsite = async () => {
+      try {
+        const adminId = localStorage.getItem('adminId');
+        
+        if (!adminId) {
+          // No admin logged in, use default data
+          console.log('No admin logged in, using default data');
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('Fetching websites for admin:', adminId);
+        
+        const response = await fetch(`${API_URL}/websites/admin/${adminId}`);
+        
+        if (!response.ok) {
+          console.error('Failed to fetch websites:', response.statusText);
+          setIsLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        console.log('Fetched websites:', data);
+
+        if (data.success && data.websites && data.websites.length > 0) {
+          // Load the most recent website (they're already ordered by updatedAt desc)
+          const mostRecentWebsite = data.websites[0];
+          
+          console.log('Loading most recent website:', mostRecentWebsite);
+          
+          // Set the website data from the database
+          setWebsiteData(normalizeWebsiteData(mostRecentWebsite.websiteData));
+          
+          // Save the current website ID for updates
+          localStorage.setItem('currentWebsiteId', mostRecentWebsite.id.toString());
+          
+          toast.success('Loaded your saved website', {
+            description: `Last updated: ${new Date(mostRecentWebsite.updatedAt).toLocaleDateString()}`,
+            duration: 3000,
+          });
+        } else {
+          // Admin has no websites, use default data
+          console.log('No websites found for admin, using default data');
+        }
+      } catch (error) {
+        console.error('Error loading admin website:', error);
+        toast.error('Failed to load your website', {
+          description: 'Using default content instead',
+          duration: 3000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAdminWebsite();
+  }, []); // Run once on mount
 
   const handleDoubleClick = (
     path: string,
@@ -348,6 +409,22 @@ export default function WebsiteBuilderPage() {
     window.open('/preview', '_blank');
     toast.info("Preview opened in new tab", { duration: 2000 });
   };
+
+  // Show loading screen while fetching data
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] text-blue-600" role="status">
+            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+              Loading...
+            </span>
+          </div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your website...</p>
+        </div>
+      </div>
+    );
+  }
 
 
   return (
