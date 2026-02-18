@@ -93,6 +93,8 @@ export default function WebsiteBuilderPage() {
   const [editValue, setEditValue] = useState("");
   const [editMode, setEditMode] = useState(true); // Edit mode toggle
   const [isLoading, setIsLoading] = useState(true); // Loading state for fetching data
+  const [websiteStatus, setWebsiteStatus] = useState<string>("DRAFT"); // Track publish status
+  const [websiteSlug, setWebsiteSlug] = useState<string>(""); // Track slug for public URL
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -137,6 +139,8 @@ export default function WebsiteBuilderPage() {
           
           // Set the website data from the database
           setWebsiteData(normalizeWebsiteData(mostRecentWebsite.websiteData));
+          setWebsiteStatus(mostRecentWebsite.status || "DRAFT");
+          setWebsiteSlug(mostRecentWebsite.slug || "");
           
           // Save the current website ID for updates
           localStorage.setItem('currentWebsiteId', mostRecentWebsite.id.toString());
@@ -381,9 +385,22 @@ export default function WebsiteBuilderPage() {
       const data = await response.json();
 
       if (response.ok) {
+        const publicUrl = `${window.location.origin}/w/${data.website.slug}`;
+        
+        // Update local state
+        setWebsiteStatus("PUBLISHED");
+        setWebsiteSlug(data.website.slug);
+        
         toast.success("Website published! 🎉", {
-          description: `Access at: ${window.location.origin}/${data.website.slug}`,
-          duration: 4000,
+          description: `Access at: ${publicUrl}`,
+          duration: 6000,
+        });
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(publicUrl).then(() => {
+          toast.info("URL copied to clipboard! 📋", {
+            duration: 3000,
+          });
         });
       } else {
         toast.error(data.error || "Failed to publish website");
@@ -431,6 +448,44 @@ export default function WebsiteBuilderPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Toaster richColors position="top-right" />
 
+      {/* Published Status Banner */}
+      <AnimatePresence>
+        {websiteStatus === "PUBLISHED" && websiteSlug && (
+          <motion.div
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            className={`fixed ${editMode ? 'top-0' : 'top-0'} left-0 right-0 z-50 bg-green-600 text-white py-2 px-4 text-center text-sm font-medium shadow-lg`}
+          >
+            <div className="flex items-center justify-center gap-3">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>Website Published!</span>
+              <span className="hidden md:inline">•</span>
+              <a 
+                href={`/w/${websiteSlug}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hidden md:inline underline hover:text-green-100"
+              >
+                {window.location.origin}/w/{websiteSlug}
+              </a>
+              <button
+                onClick={() => {
+                  const publicUrl = `${window.location.origin}/w/${websiteSlug}`;
+                  navigator.clipboard.writeText(publicUrl);
+                  toast.success("Public URL copied!", { duration: 2000 });
+                }}
+                className="ml-2 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs transition-colors"
+              >
+                Copy Link
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Edit Mode Banner */}
       <AnimatePresence>
         {editMode && (
@@ -438,7 +493,7 @@ export default function WebsiteBuilderPage() {
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
-            className="fixed top-0 left-0 right-0 z-50 bg-[#1877F2] text-white py-2 px-4 text-center text-sm font-medium shadow-lg"
+            className={`fixed ${websiteStatus === "PUBLISHED" && websiteSlug ? 'top-9' : 'top-0'} left-0 right-0 z-50 bg-[#1877F2] text-white py-2 px-4 text-center text-sm font-medium shadow-lg`}
           >
             <div className="flex items-center justify-center gap-2">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -516,7 +571,13 @@ export default function WebsiteBuilderPage() {
       </div>
 
       {/* Canvas Area */}
-      <div className={`pb-8 transition-all duration-300 ${editMode ? 'pt-12' : 'pt-0'}`}>
+      <div className={`pb-8 transition-all duration-300 ${
+        websiteStatus === "PUBLISHED" && websiteSlug && editMode 
+          ? 'pt-20' 
+          : editMode || (websiteStatus === "PUBLISHED" && websiteSlug)
+          ? 'pt-12' 
+          : 'pt-0'
+      }`}>
         <div className="max-w-7xl mx-auto">
           <HackathonTemplate
             data={websiteData}
