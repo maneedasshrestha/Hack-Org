@@ -39,7 +39,7 @@ export function SignupForm({
     try {
       console.log("Sending request to backend...");
       const response = await fetch(
-        "https://hackorgbackend.onrender.com/api/createadmin",
+        `${process.env.NEXT_PUBLIC_API_URL}/createadmin`,
         {
           method: "POST",
           headers: {

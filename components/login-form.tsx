@@ -25,7 +25,7 @@ export function LoginForm({
 
     try {
       const response = await fetch(
-        "https://hackorgbackend.onrender.com/api/loginadmin",
+        `${process.env.NEXT_PUBLIC_API_URL}/loginadmin`,
         {
           method: "POST",
           headers: {
@@ -43,12 +43,11 @@ export function LoginForm({
 
       // Store JWT in localStorage
       localStorage.setItem("token", result.token);
-      localStorage.setItem('adminId', result.id);
+      localStorage.setItem("adminId", result.id);
       console.log("Token obtained:", result.token);
 
       // Redirect to dashboard after successful authentication
       window.location.href = "/dashboard";
-
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
