@@ -44,6 +44,8 @@ export function LoginForm({
       // Store JWT in localStorage
       localStorage.setItem("token", result.token);
       localStorage.setItem("adminId", result.id);
+      // Clear any previous website ID to prevent conflicts
+      localStorage.removeItem("currentWebsiteId");
       console.log("Token obtained:", result.token);
 
       // Redirect to dashboard after successful authentication

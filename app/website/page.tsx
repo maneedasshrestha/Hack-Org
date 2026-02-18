@@ -150,8 +150,9 @@ export default function WebsiteBuilderPage() {
             duration: 3000,
           });
         } else {
-          // Admin has no websites, use default data
+          // Admin has no websites, use default data and clear any old website ID
           console.log('No websites found for admin, using default data');
+          localStorage.removeItem('currentWebsiteId'); // Clear old website ID
         }
       } catch (error) {
         console.error('Error loading admin website:', error);
@@ -375,11 +376,14 @@ export default function WebsiteBuilderPage() {
   };
   const publishWebsiteToDatabase = async (websiteId: number) => {
     try {
+      const adminId = localStorage.getItem('adminId');
+      
       const response = await fetch(`${API_URL}/website/${websiteId}/publish`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ adminId }),
       });
 
       const data = await response.json();

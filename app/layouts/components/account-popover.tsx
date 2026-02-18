@@ -60,6 +60,8 @@ export function AccountPopover({
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token"); // Remove JWT
+    localStorage.removeItem("adminId"); // Remove admin ID
+    localStorage.removeItem("currentWebsiteId"); // Remove website ID
     handleClosePopover();
     router.push("/login"); // Redirect to login page
   }, [handleClosePopover, router]);
