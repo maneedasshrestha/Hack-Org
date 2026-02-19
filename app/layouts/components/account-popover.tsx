@@ -1,7 +1,8 @@
 "use client";
 import type { IconButtonProps } from "@mui/material/IconButton";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -13,7 +14,6 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import MenuItem, { menuItemClasses } from "@mui/material/MenuItem";
 import { usePathname, useRouter } from "@/app/routes/hooks";
-import { _myAccount } from "@/app/_mock";
 
 // ----------------------------------------------------------------------
 
@@ -32,8 +32,30 @@ export function AccountPopover({
   ...other
 }: AccountPopoverProps) {
   const router = useRouter();
-
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  const isDashboard = pathname.startsWith("/dashboard");
+
+  const [adminEmail, setAdminEmail] = useState("");
+
+  useEffect(() => {
+    if (isDashboard) {
+      setAdminEmail(localStorage.getItem("adminEmail") ?? "");
+    }
+  }, [isDashboard]);
+
+  const user = isDashboard
+    ? {
+        displayName: adminEmail ? adminEmail.split("@")[0] : "Admin",
+        email: adminEmail,
+        photoURL: "",
+      }
+    : {
+        displayName: session?.user?.name ?? "User",
+        email: session?.user?.email ?? "",
+        photoURL: session?.user?.image ?? "",
+      };
 
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(
     null,
@@ -61,6 +83,7 @@ export function AccountPopover({
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token"); // Remove JWT
     localStorage.removeItem("adminId"); // Remove admin ID
+    localStorage.removeItem("adminEmail"); // Remove admin email
     localStorage.removeItem("currentWebsiteId"); // Remove website ID
     handleClosePopover();
     router.push("/login"); // Redirect to login page
@@ -81,11 +104,11 @@ export function AccountPopover({
         {...other}
       >
         <Avatar
-          src={_myAccount.photoURL}
-          alt={_myAccount.displayName}
+          src={user.photoURL}
+          alt={user.displayName}
           sx={{ width: 1, height: 1 }}
         >
-          {_myAccount.displayName.charAt(0).toUpperCase()}
+          {user.displayName.charAt(0).toUpperCase()}
         </Avatar>
       </IconButton>
 
@@ -103,11 +126,11 @@ export function AccountPopover({
       >
         <Box sx={{ p: 2, pb: 1.5 }}>
           <Typography variant="subtitle2" noWrap>
-            {_myAccount?.displayName}
+            {user.displayName}
           </Typography>
 
           <Typography variant="body2" sx={{ color: "text.secondary" }} noWrap>
-            {_myAccount?.email}
+            {user.email}
           </Typography>
         </Box>
 
