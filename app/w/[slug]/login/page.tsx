@@ -1,9 +1,20 @@
-
 "use client";
 
 import { signIn } from "next-auth/react";
+import { useParams } from "next/navigation";
 
 export default function SignIn() {
+  const params = useParams() as { slug?: string };
+  const slug = params?.slug;
+
+  const handleSignIn = () => {
+    const callbackUrl =
+      typeof window !== "undefined" && slug
+        ? `${window.location.origin}/w/${slug}/dashboard`
+        : undefined;
+    signIn("github", { callbackUrl });
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-white text-gray-900 font-sans">
       <div className="text-center p-8 border bg-gray-900 rounded-xl shadow-lg max-w-sm w-full">
@@ -12,7 +23,7 @@ export default function SignIn() {
         </h1>
         <p className="mb-6 text-gray-300">Please log in to continue</p>
         <button
-          onClick={() => signIn("github")}
+          onClick={handleSignIn}
           className="px-8 py-3 font-semibold text-white bg-gray-800 rounded-lg border border-gray-800 transition-colors duration-300 hover:bg-white hover:text-gray-900"
         >
           Login with GitHub

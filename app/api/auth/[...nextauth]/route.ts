@@ -12,9 +12,60 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      try {
+        // Call backend API to create/update user
+        const githubProfile = profile as { login?: string; name?: string };
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/createuser`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              githubId: account?.providerAccountId,
+              githubUsername: githubProfile?.login || githubProfile?.name,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          console.error(
+            "Failed to create user in backend:",
+            await response.text(),
+          );
+          return false;
+        }
+
+        const data = await response.json();
+        console.log("User created/updated in backend:", data);
+
+        // Store user data in session
+        if (data.user) {
+          user.id = data.user.id;
+        }
+
+        return true;
+      } catch (error) {
+        console.error("Error calling backend API:", error);
+        return false;
+      }
+    },
     redirect: async ({ url, baseUrl }: { url: string; baseUrl: string }) => {
-      // Always redirect to dashboard
-      return `${baseUrl}/dashboard`;
+      // Prefer callback URL when provided and same-origin. Fall back to baseUrl.
+      if (!url) return baseUrl;
+      try {
+        const resolved = new URL(url, baseUrl).toString();
+        const baseOrigin = new URL(baseUrl).origin;
+        if (new URL(resolved).origin === baseOrigin) return resolved;
+        return baseUrl;
+      } catch (e) {
+        return baseUrl;
+      }
     },
   },
 };
