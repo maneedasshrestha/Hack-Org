@@ -55,12 +55,16 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
         token.picture = user.image;
+      }
+      if (account?.provider === "github" && profile) {
+        const githubProfile = profile as { login?: string };
+        token.username = githubProfile.login;
       }
       return token;
     },
@@ -70,6 +74,7 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.image = token.picture as string;
+        session.user.username = token.username;
       }
       return session;
     },

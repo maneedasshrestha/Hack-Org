@@ -157,7 +157,9 @@ export function AccountPopover({
             },
           }}
         >
-          {data.map((option) => (
+          {data
+            .filter((option) => !(isDashboard && option.href === '/profile'))
+            .map((option) => (
             <MenuItem
               key={option.label}
               selected={option.href === pathname}
