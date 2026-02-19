@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/toaster";
+import Link from "next/link";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -152,13 +153,13 @@ export default function PublicWebsitePage() {
   return (
     <>
       <Toaster richColors position="top-right" />
-      <HackathonTemplate data={websiteData} />
+      <HackathonTemplate data={websiteData} slug={slug} />
     </>
   );
 }
 
 // Public Template Component (No Edit Mode)
-function HackathonTemplate({ data }: { data: HackathonWebsiteData }) {
+function HackathonTemplate({ data, slug }: { data: HackathonWebsiteData; slug: string }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
@@ -213,7 +214,9 @@ function HackathonTemplate({ data }: { data: HackathonWebsiteData }) {
                 size="sm"
                 className="bg-[#1877F2] hover:bg-[#0C44AE] text-white border-0 shadow-md transition-all"
               >
-                Register Now
+<Link href={`/w/${slug}/login`}>
+                Register now
+                </Link>
               </Button>
             </div>
 
