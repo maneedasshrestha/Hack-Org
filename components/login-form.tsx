@@ -44,6 +44,7 @@ export function LoginForm({
       // Store JWT in localStorage
       localStorage.setItem("token", result.token);
       localStorage.setItem("adminId", result.id);
+      localStorage.setItem("adminEmail", result.email);
       // Clear any previous website ID to prevent conflicts
       localStorage.removeItem("currentWebsiteId");
       console.log("Token obtained:", result.token);

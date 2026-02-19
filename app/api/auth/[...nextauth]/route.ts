@@ -55,6 +55,29 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
+    async jwt({ token, user, account, profile }) {
+      if (user) {
+        token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+        token.picture = user.image;
+      }
+      if (account?.provider === "github" && profile) {
+        const githubProfile = profile as { login?: string };
+        token.username = githubProfile.login;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.image = token.picture as string;
+        session.user.username = token.username;
+      }
+      return session;
+    },
     redirect: async ({ url, baseUrl }: { url: string; baseUrl: string }) => {
       // Prefer callback URL when provided and same-origin. Fall back to baseUrl.
       if (!url) return baseUrl;

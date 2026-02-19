@@ -124,16 +124,7 @@ export default function WorkspaceDashboardPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Welcome Banner */}
-      {session?.user && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-6 py-3">
-          <p className="text-sm text-blue-700 dark:text-blue-300">
-            Welcome back,{" "}
-            <span className="font-semibold">{session.user.name || session.user.email}</span>!
-            You are viewing the dashboard for{" "}
-            <span className="font-semibold">{websiteData.eventName}</span>.
-          </p>
-        </div>
-      )}
+      
 
       {/* Hero Section */}
       <section id="hero" className="relative overflow-hidden bg-white dark:bg-gray-900 py-20 border-b border-gray-200 dark:border-gray-800">
