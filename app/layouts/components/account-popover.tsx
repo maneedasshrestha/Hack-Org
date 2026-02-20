@@ -35,26 +35,26 @@ export function AccountPopover({
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  const isDashboard = pathname.startsWith("/dashboard");
+  const isWorkspace = pathname.startsWith("/w/");
 
   const [adminEmail, setAdminEmail] = useState("");
 
   useEffect(() => {
-    if (isDashboard) {
+    if (!isWorkspace) {
       setAdminEmail(localStorage.getItem("adminEmail") ?? "");
     }
-  }, [isDashboard]);
+  }, [isWorkspace]);
 
-  const user = isDashboard
+  const user = isWorkspace
     ? {
-        displayName: adminEmail ? adminEmail.split("@")[0] : "Admin",
-        email: adminEmail,
-        photoURL: "",
-      }
-    : {
         displayName: session?.user?.name ?? "User",
         email: session?.user?.email ?? "",
         photoURL: session?.user?.image ?? "",
+      }
+    : {
+        displayName: adminEmail ? adminEmail.split("@")[0] : "Admin",
+        email: adminEmail,
+        photoURL: "",
       };
 
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(
@@ -158,7 +158,7 @@ export function AccountPopover({
           }}
         >
           {data
-            .filter((option) => !(isDashboard && option.href === '/profile'))
+            .filter((option) => !(!isWorkspace && option.href === '/profile'))
             .map((option) => (
             <MenuItem
               key={option.label}
