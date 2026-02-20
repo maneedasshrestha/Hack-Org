@@ -17,13 +17,15 @@ import { Label } from '@/components/label';
 // ----------------------------------------------------------------------
 
 export type UserProps = {
-  id: string;
+  id: number;
+  userId: number;
+  email: string;
   name: string;
-  role: string;
+  image: string | null;
+  githubUsername: string | null;
+  teamName?: string | null; // To be implemented later
+  registeredAt: string;
   status: string;
-  company: string;
-  avatarUrl: string;
-  isVerified: boolean;
 };
 
 type UserTableRowProps = {
@@ -58,25 +60,33 @@ export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) 
               alignItems: 'center',
             }}
           >
-            <Avatar alt={row.name} src={row.avatarUrl} />
-            {row.name}
+            <Avatar alt={row.name || 'User'} src={row.image || undefined} />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {row.name || 'No Name'}
+                {row.githubUsername && (
+                  <a 
+                    href={`https://github.com/${row.githubUsername}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}
+                  >
+                    <Iconify icon="socials:github" width={20} sx={{ color: 'text.secondary' }} />
+                  </a>
+                )}
+              </Box>
+            </Box>
           </Box>
         </TableCell>
 
-        <TableCell>{row.company}</TableCell>
+        <TableCell>{row.email}</TableCell>
 
-        <TableCell>{row.role}</TableCell>
-
-        <TableCell align="center">
-          {row.isVerified ? (
-            <Iconify width={22} icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />
-          ) : (
-            '-'
-          )}
-        </TableCell>
+        <TableCell>{row.teamName || '-'}</TableCell>
 
         <TableCell>
-          <Label color={(row.status === 'banned' && 'error') || 'success'}>{row.status}</Label>
+          <Label color={(row.status === 'REJECTED' && 'error') || (row.status === 'APPROVED' && 'success') || 'warning'}>
+            {row.status}
+          </Label>
         </TableCell>
 
         <TableCell align="right">
