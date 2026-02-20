@@ -1,23 +1,17 @@
-
-import { Iconify } from '@/components/iconify';
-import type { AccountPopoverProps } from './components/account-popover';
+import { Iconify } from "@/components/iconify";
+import type { AccountPopoverProps } from "./components/account-popover";
 
 // ----------------------------------------------------------------------
 
-export const _account: AccountPopoverProps['data'] = [
+export const _account: AccountPopoverProps["data"] = [
   {
-    label: 'Home',
-    href: '/',
+    label: "Home",
+    href: "/",
     icon: <Iconify width={22} icon="solar:home-angle-bold-duotone" />,
   },
   {
-    label: 'Profile',
-    href: '/profile',
+    label: "Profile",
+    href: "/profile",
     icon: <Iconify width={22} icon="solar:shield-keyhole-bold-duotone" />,
-  },
-  {
-    label: 'Settings',
-    href: '#',
-    icon: <Iconify width={22} icon="solar:settings-bold-duotone" />,
   },
 ];

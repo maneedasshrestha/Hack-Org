@@ -6,7 +6,6 @@ import { useRouter, useParams } from "next/navigation";
 import { useTheme } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
-import { merge } from "es-toolkit";
 
 import { _account } from "@/app/layouts/nav-config-account";
 import { _notifications } from "@/app/_mock";
@@ -14,9 +13,7 @@ import { dashboardLayoutVars } from "@/app/layouts/dashboard/css-vars";
 import { LayoutSection } from "@/app/layouts/core/layout-section";
 import { HeaderSection } from "@/app/layouts/core/header-section";
 import { MainSection } from "@/app/layouts/core/main-section";
-import { Searchbar } from "@/app/layouts/components/searchbar";
 import { AccountPopover } from "@/app/layouts/components/account-popover";
-import { NotificationsPopover } from "@/app/layouts/components/notifications-popover";
 import { Logo } from "@/components/logo";
 
 export default function WorkspaceDashboardLayout({
@@ -66,8 +63,6 @@ export default function WorkspaceDashboardLayout({
         leftArea: <Logo />,
         rightArea: (
           <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0, sm: 0.75 } }}>
-            <Searchbar />
-            <NotificationsPopover data={_notifications} />
             <AccountPopover data={_account} />
           </Box>
         ),
