@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
 import { Copy as CopyIcon, Check as CheckIcon } from "lucide-react";
 // Copy-to-clipboard button with icon and popup
 function CopyButton({ text, onCopy }: { text: string; onCopy: () => void }) {
@@ -54,7 +55,47 @@ const MAX_GROUP_SIZE = 4;
 
 const DashBoardParticipant = () => {
   const { data: session, status } = useSession();
+  const params = useParams();
+  const slug = params.slug as string;
   const [showCopiedPopup, setShowCopiedPopup] = useState(false);
+  const [registrationChecked, setRegistrationChecked] = useState(false);
+  
+  // Ensure user is registered when component mounts
+  useEffect(() => {
+    const registerUser = async () => {
+      if (session?.user?.id && slug && !registrationChecked) {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/registration/register`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                userId: session.user.id,
+                slug: slug,
+              }),
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log("User registration confirmed:", data);
+          } else {
+            console.error("Registration check failed:", await response.text());
+          }
+        } catch (error) {
+          console.error("Error checking registration:", error);
+        } finally {
+          setRegistrationChecked(true);
+        }
+      }
+    };
+
+    registerUser();
+  }, [session?.user?.id, slug, registrationChecked]);
+  
   // Group state (keep for now, but focus on user details)
   const [group, setGroup] = useState<{
     name: string;

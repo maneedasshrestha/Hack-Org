@@ -12,6 +12,12 @@ export default function SignIn() {
       typeof window !== "undefined" && slug
         ? `${window.location.origin}/w/${slug}/dashboard`
         : undefined;
+    
+    // Store slug in sessionStorage so we can access it after authentication
+    if (slug) {
+      sessionStorage.setItem("websiteSlug", slug);
+    }
+    
     signIn("github", { callbackUrl });
   };
 
