@@ -1,7 +1,7 @@
 "use client";
 
-import { ProductsView } from "../sections/product/view";
+import { MentorsView } from "../sections/mentor/view";
 
-export default function ProductsPage() {
-  return <ProductsView />;
+export default function MentorsPage() {
+  return <MentorsView />;
 }

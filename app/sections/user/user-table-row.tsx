@@ -8,6 +8,7 @@ import Checkbox from '@mui/material/Checkbox';
 import MenuList from '@mui/material/MenuList';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 import { Iconify } from '@/components/iconify';
 import { Label } from '@/components/label';
@@ -16,23 +17,29 @@ import { Label } from '@/components/label';
 
 // ----------------------------------------------------------------------
 
-export type UserProps = {
+export type ParticipantStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export type ParticipantProps = {
   id: string;
   name: string;
-  role: string;
-  status: string;
-  company: string;
+  email: string;
+  githubUsername: string;
   avatarUrl: string;
-  isVerified: boolean;
+  registeredAt: string;
+  status: ParticipantStatus;
 };
+
+// Keep backward compatibility
+export type UserProps = ParticipantProps;
 
 type UserTableRowProps = {
-  row: UserProps;
+  row: ParticipantProps;
   selected: boolean;
   onSelectRow: () => void;
+  onStatusChange?: (id: string, status: ParticipantStatus) => void;
 };
 
-export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) {
+export function UserTableRow({ row, selected, onSelectRow, onStatusChange }: UserTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -42,6 +49,35 @@ export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) 
   const handleClosePopover = useCallback(() => {
     setOpenPopover(null);
   }, []);
+
+  const getStatusColor = (status: ParticipantStatus): 'warning' | 'success' | 'error' => {
+    switch (status) {
+      case 'APPROVED':
+        return 'success';
+      case 'REJECTED':
+        return 'error';
+      case 'PENDING':
+      default:
+        return 'warning';
+    }
+  };
+
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const handleStatusChange = (newStatus: ParticipantStatus) => {
+    if (onStatusChange) {
+      onStatusChange(row.id, newStatus);
+    }
+    handleClosePopover();
+  };
 
   return (
     <>
@@ -59,24 +95,23 @@ export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) 
             }}
           >
             <Avatar alt={row.name} src={row.avatarUrl} />
-            {row.name}
+            <Box>
+              <Typography variant="subtitle2">{row.name}</Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                {row.githubUsername && `@${row.githubUsername}`}
+              </Typography>
+            </Box>
           </Box>
         </TableCell>
 
-        <TableCell>{row.company}</TableCell>
+        <TableCell>{row.email}</TableCell>
 
-        <TableCell>{row.role}</TableCell>
+        <TableCell>{row.githubUsername ? `@${row.githubUsername}` : '-'}</TableCell>
 
-        <TableCell align="center">
-          {row.isVerified ? (
-            <Iconify width={22} icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />
-          ) : (
-            '-'
-          )}
-        </TableCell>
+        <TableCell>{formatDate(row.registeredAt)}</TableCell>
 
         <TableCell>
-          <Label color={(row.status === 'banned' && 'error') || 'success'}>{row.status}</Label>
+          <Label color={getStatusColor(row.status)}>{row.status}</Label>
         </TableCell>
 
         <TableCell align="right">
@@ -109,14 +144,19 @@ export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) 
             },
           }}
         >
-          <MenuItem onClick={handleClosePopover}>
-            <Iconify icon="solar:pen-bold" />
-            Edit
+          <MenuItem onClick={() => handleStatusChange('APPROVED')}>
+            <Iconify icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />
+            Approve
           </MenuItem>
 
-          <MenuItem onClick={handleClosePopover} sx={{ color: 'error.main' }}>
+          <MenuItem onClick={() => handleStatusChange('REJECTED')} sx={{ color: 'error.main' }}>
             <Iconify icon="solar:trash-bin-trash-bold" />
-            Delete
+            Reject
+          </MenuItem>
+
+          <MenuItem onClick={() => handleStatusChange('PENDING')}>
+            <Iconify icon="solar:pen-bold" sx={{ color: 'warning.main' }} />
+            Set Pending
           </MenuItem>
         </MenuList>
       </Popover>

@@ -2,12 +2,18 @@
 
 import { signIn } from "next-auth/react";
 import { useParams } from "next/navigation";
+import { setHackathonSlug } from "@/lib/hackathon-context";
 
 export default function SignIn() {
   const params = useParams() as { slug?: string };
   const slug = params?.slug;
 
   const handleSignIn = () => {
+    // Store hackathon slug in cookie for retrieval after OAuth callback
+    if (slug) {
+      setHackathonSlug(slug);
+    }
+
     const callbackUrl =
       typeof window !== "undefined" && slug
         ? `${window.location.origin}/w/${slug}/dashboard`

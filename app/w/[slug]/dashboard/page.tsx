@@ -1,7 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
 import { Copy as CopyIcon, Check as CheckIcon } from "lucide-react";
+import { getHackathonSlug, clearHackathonSlug } from "@/lib/hackathon-context";
 // Copy-to-clipboard button with icon and popup
 function CopyButton({ text, onCopy }: { text: string; onCopy: () => void }) {
   const [copied, setCopied] = useState(false);
@@ -54,7 +56,48 @@ const MAX_GROUP_SIZE = 4;
 
 const DashBoardParticipant = () => {
   const { data: session, status } = useSession();
+  const params = useParams() as { slug?: string };
+  const slugFromUrl = params?.slug;
   const [showCopiedPopup, setShowCopiedPopup] = useState(false);
+  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'registering' | 'registered' | 'error'>('idle');
+
+  // Auto-register for hackathon after OAuth login
+  useEffect(() => {
+    const registerForHackathon = async () => {
+      if (status !== 'authenticated' || !session?.user?.id) return;
+
+      // Check if there's a pending hackathon registration
+      const storedSlug = getHackathonSlug();
+
+      if (storedSlug && session.user.id) {
+        setRegistrationStatus('registering');
+        try {
+          const response = await fetch('/api/register-hackathon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: session.user.id,
+              slug: storedSlug,
+            }),
+          });
+
+          if (response.ok) {
+            setRegistrationStatus('registered');
+          } else {
+            setRegistrationStatus('error');
+          }
+        } catch (error) {
+          console.error('Failed to register for hackathon:', error);
+          setRegistrationStatus('error');
+        }
+
+        // Clear the cookie after registration attempt
+        clearHackathonSlug();
+      }
+    };
+
+    registerForHackathon();
+  }, [status, session]);
   // Group state (keep for now, but focus on user details)
   const [group, setGroup] = useState<{
     name: string;

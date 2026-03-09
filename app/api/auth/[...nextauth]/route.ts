@@ -1,6 +1,20 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 
+// Helper to get hackathon slug from cookie (server-side)
+function getHackathonSlugFromCookie(cookieHeader: string | null): string | null {
+  if (!cookieHeader) return null;
+
+  const cookies = cookieHeader.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'hackathonSlug') {
+      return value;
+    }
+  }
+  return null;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({

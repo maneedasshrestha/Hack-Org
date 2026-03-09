@@ -12,18 +12,29 @@ type TableNoDataProps = TableRowProps & {
 };
 
 export function TableNoData({ searchQuery, ...other }: TableNoDataProps) {
+  const isSearch = !!searchQuery;
+
   return (
     <TableRow {...other}>
       <TableCell align="center" colSpan={7}>
         <Box sx={{ py: 15, textAlign: 'center' }}>
           <Typography variant="h6" sx={{ mb: 1 }}>
-            Not found
+            {isSearch ? 'Not found' : 'No Participants'}
           </Typography>
 
           <Typography variant="body2">
-            No results found for &nbsp;
-            <strong>&quot;{searchQuery}&quot;</strong>.
-            <br /> Try checking for typos or using complete words.
+            {isSearch ? (
+              <>
+                No results found for &nbsp;
+                <strong>&quot;{searchQuery}&quot;</strong>.
+                <br /> Try checking for typos or using complete words.
+              </>
+            ) : (
+              <>
+                No participants have registered yet.
+                <br /> Share your hackathon link to get participants!
+              </>
+            )}
           </Typography>
         </Box>
       </TableCell>

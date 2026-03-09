@@ -1,4 +1,7 @@
-import type { UserProps } from './user-table-row';
+import type { ParticipantProps } from './user-table-row';
+
+// Keep backward compatibility
+export type UserProps = ParticipantProps;
 
 // ----------------------------------------------------------------------
 
@@ -53,7 +56,7 @@ export function getComparator<Key extends keyof any>(
 // ----------------------------------------------------------------------
 
 type ApplyFilterProps = {
-  inputData: UserProps[];
+  inputData: ParticipantProps[];
   filterName: string;
   comparator: (a: any, b: any) => number;
 };
@@ -71,7 +74,11 @@ export function applyFilter({ inputData, comparator, filterName }: ApplyFilterPr
 
   if (filterName) {
     inputData = inputData.filter(
-      (user) => user.name.toLowerCase().indexOf(filterName.toLowerCase()) !== -1
+      (participant) =>
+        participant.name.toLowerCase().indexOf(filterName.toLowerCase()) !== -1 ||
+        participant.email.toLowerCase().indexOf(filterName.toLowerCase()) !== -1 ||
+        (participant.githubUsername &&
+          participant.githubUsername.toLowerCase().indexOf(filterName.toLowerCase()) !== -1)
     );
   }
 
