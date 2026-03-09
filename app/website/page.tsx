@@ -452,44 +452,6 @@ export default function WebsiteBuilderPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Toaster richColors position="top-right" />
 
-      {/* Published Status Banner */}
-      <AnimatePresence>
-        {websiteStatus === "PUBLISHED" && websiteSlug && (
-          <motion.div
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -100, opacity: 0 }}
-            className={`fixed ${editMode ? 'top-0' : 'top-0'} left-0 right-0 z-50 bg-green-600 text-white py-2 px-4 text-center text-sm font-medium shadow-lg`}
-          >
-            <div className="flex items-center justify-center gap-3">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span>Website Published!</span>
-              <span className="hidden md:inline">•</span>
-              <a 
-                href={`/w/${websiteSlug}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hidden md:inline underline hover:text-green-100"
-              >
-                {window.location.origin}/w/{websiteSlug}
-              </a>
-              <button
-                onClick={() => {
-                  const publicUrl = `${window.location.origin}/w/${websiteSlug}`;
-                  navigator.clipboard.writeText(publicUrl);
-                  toast.success("Public URL copied!", { duration: 2000 });
-                }}
-                className="ml-2 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs transition-colors"
-              >
-                Copy Link
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Edit Mode Banner */}
       <AnimatePresence>
         {editMode && (
@@ -497,7 +459,7 @@ export default function WebsiteBuilderPage() {
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
-            className={`fixed ${websiteStatus === "PUBLISHED" && websiteSlug ? 'top-9' : 'top-0'} left-0 right-0 z-50 bg-[#1877F2] text-white py-2 px-4 text-center text-sm font-medium shadow-lg`}
+            className={`fixed ${websiteStatus === "PUBLISHED" && websiteSlug ? 'top-9' : 'top-0'} left-0 right-0 z-[200] bg-[#1877F2] text-white py-2 px-4 text-center text-sm font-medium shadow-lg`}
           >
             <div className="flex items-center justify-center gap-2">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -575,13 +537,7 @@ export default function WebsiteBuilderPage() {
       </div>
 
       {/* Canvas Area */}
-      <div className={`pb-8 transition-all duration-300 ${
-        websiteStatus === "PUBLISHED" && websiteSlug && editMode 
-          ? 'pt-20' 
-          : editMode || (websiteStatus === "PUBLISHED" && websiteSlug)
-          ? 'pt-12' 
-          : 'pt-0'
-      }`}>
+      <div className={`pb-8 transition-all duration-300 ${editMode ? 'pt-9' : 'pt-0'}`}>
         <div className="max-w-7xl mx-auto">
           <HackathonTemplate
             data={websiteData}
@@ -599,6 +555,9 @@ export default function WebsiteBuilderPage() {
             inputRef={inputRef}
             textareaRef={textareaRef}
             editMode={editMode}
+            websiteStatus={websiteStatus}
+            websiteSlug={websiteSlug}
+            stickyNavTop={editMode ? 36 : 0}
           />
         </div>
       </div>
@@ -718,6 +677,9 @@ function HackathonTemplate({
   inputRef,
   textareaRef,
   editMode,
+  websiteStatus,
+  websiteSlug,
+  stickyNavTop = 0,
 }: any) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -732,7 +694,7 @@ function HackathonTemplate({
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Navbar */}
-      <nav className="sticky top-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <nav style={{ top: stickyNavTop }} className="sticky z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Left: Hackathon Name */}
@@ -837,6 +799,44 @@ function HackathonTemplate({
           </div>
         )}
       </nav>
+
+      {/* Published Status Banner - sticky below navbar */}
+      <AnimatePresence>
+        {websiteStatus === "PUBLISHED" && websiteSlug && (
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            style={{ top: stickyNavTop + 64 }}
+            className="sticky z-30 bg-green-600 text-white py-2 px-4 text-sm font-medium shadow-md"
+          >
+            <div className="flex items-center justify-center gap-3">
+              <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="shrink-0">Website Published!</span>
+              <span className="hidden md:inline shrink-0">•</span>
+              <a
+                href={`/w/${websiteSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden md:inline underline hover:text-green-100 truncate min-w-0"
+              >
+                {typeof window !== 'undefined' ? window.location.origin : ''}/w/{websiteSlug}
+              </a>
+              <button
+                onClick={() => {
+                  const publicUrl = `${window.location.origin}/w/${websiteSlug}`;
+                  navigator.clipboard.writeText(publicUrl);
+                }}
+                className="shrink-0 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs transition-colors"
+              >
+                Copy Link
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Hero Section */}
       <section id="hero" className="relative overflow-hidden bg-white dark:bg-gray-900 py-20 border-b border-gray-200 dark:border-gray-800">

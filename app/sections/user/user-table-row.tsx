@@ -22,11 +22,11 @@ export type ParticipantStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ParticipantProps = {
   id: string;
   name: string;
-  email: string;
-  githubUsername: string;
+  role: string;
+  status: string;
+  company: string;
   avatarUrl: string;
-  registeredAt: string;
-  status: ParticipantStatus;
+  isVerified: boolean;
 };
 
 // Keep backward compatibility
@@ -95,20 +95,21 @@ export function UserTableRow({ row, selected, onSelectRow, onStatusChange }: Use
             }}
           >
             <Avatar alt={row.name} src={row.avatarUrl} />
-            <Box>
-              <Typography variant="subtitle2">{row.name}</Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                {row.githubUsername && `@${row.githubUsername}`}
-              </Typography>
-            </Box>
+            {row.name}
           </Box>
         </TableCell>
 
         <TableCell>{row.email}</TableCell>
 
-        <TableCell>{row.githubUsername ? `@${row.githubUsername}` : '-'}</TableCell>
+        <TableCell>{row.role}</TableCell>
 
-        <TableCell>{formatDate(row.registeredAt)}</TableCell>
+        <TableCell align="center">
+          {row.isVerified ? (
+            <Iconify width={22} icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />
+          ) : (
+            '-'
+          )}
+        </TableCell>
 
         <TableCell>
           <Label color={getStatusColor(row.status)}>{row.status}</Label>

@@ -61,6 +61,42 @@ export const authOptions: NextAuthOptions = {
         // Store user data in session
         if (data.user) {
           user.id = data.user.id;
+          
+          // Check if there's a website slug in the callback URL to register the user
+          // The slug will be extracted from the callbackUrl
+          const callbackUrl = (account as any)?.callbackUrl || "";
+          const slugMatch = callbackUrl.match(/\/w\/([^\/]+)/);
+          
+          if (slugMatch && slugMatch[1]) {
+            const slug = slugMatch[1];
+            console.log("Registering user to website with slug:", slug);
+            
+            try {
+              const registrationResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/registration/register`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    userId: data.user.id,
+                    slug: slug,
+                  }),
+                },
+              );
+
+              if (registrationResponse.ok) {
+                const registrationData = await registrationResponse.json();
+                console.log("User registered to website:", registrationData);
+              } else {
+                console.error("Failed to register user to website:", await registrationResponse.text());
+              }
+            } catch (regError) {
+              console.error("Error registering user to website:", regError);
+              // Don't fail the sign-in if registration fails
+            }
+          }
         }
 
         return true;
