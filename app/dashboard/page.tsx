@@ -1,248 +1,206 @@
 "use client";
+
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AnalyticsWidgetSummary } from "../sections/overview/analytics-widget-summary";
-import { AnalyticsCurrentVisits } from "../sections/overview/analytics-current-visits";
-import { AnalyticsWebsiteVisits } from "../sections/overview/analytics-website-visits";
-import { AnalyticsConversionRates } from "../sections/overview/analytics-conversion-rates";
-import { AnalyticsCurrentSubject } from "../sections/overview/analytics-current-subject";
-import { AnalyticsNews } from "../sections/overview/analytics-news";
-import { AnalyticsOrderTimeline } from "../sections/overview/analytics-order-timeline";
-import { AnalyticsTrafficBySite } from "../sections/overview/analytics-traffic-by-site";
-import { AnalyticsTasks } from "../sections/overview/analytics-tasks";
-import { _posts, _tasks, _timeline, _traffic } from "../_mock";
+import { StatsCard } from "../sections/dashboard/stats-card";
+import { HackathonStatusChart } from "../sections/dashboard/hackathon-status-chart";
+import { HackathonList } from "../sections/dashboard/hackathon-list";
+import { RecentRegistrations } from "../sections/dashboard/recent-registrations";
+import { QuickActions } from "../sections/dashboard/quick-actions";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+type StatsData = {
+  summary: {
+    totalHackathons: number;
+    publishedHackathons: number;
+    draftHackathons: number;
+    totalParticipants: number;
+    pendingRegistrations: number;
+    approvedRegistrations: number;
+    rejectedRegistrations: number;
+    totalMentors: number;
+    activeMentors: number;
+  };
+  hackathons: Array<{
+    id: number;
+    title: string;
+    slug: string;
+    status: string;
+    participantCount: number;
+    mentorCount: number;
+    updatedAt: string;
+  }>;
+  recentRegistrations: Array<{
+    id: number;
+    userName: string;
+    userEmail: string;
+    status: string;
+    registeredAt: string;
+    hackathonTitle: string;
+    hackathonSlug: string;
+  }>;
+  registrationTrends: Array<{
+    month: string;
+    count: number;
+  }>;
+};
 
 export function OverviewAnalyticsView() {
   const router = useRouter();
-  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [adminName, setAdminName] = useState<string>("");
 
   useEffect(() => {
-    // This runs only on the client side
-    const storedToken = localStorage.getItem("token");
+    const fetchData = async () => {
+      const adminId = localStorage.getItem("adminId");
+      const adminName = localStorage.getItem("adminName");
 
-    if (!storedToken) {
-      // No token, redirect to login
-      router.push("/login");
-      return;
-    }
+      if (!adminId) {
+        router.push("/login");
+        return;
+      }
 
-    setToken(storedToken);
-    console.log("Token:", storedToken);
+      setAdminName(adminName || "Admin");
+
+      try {
+        const response = await fetch(`${API_URL}/stats/admin/${adminId}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch dashboard data");
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          setStats(data.stats);
+        } else {
+          throw new Error("Failed to load stats");
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+        setError("Failed to load dashboard data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [router]);
 
-  // Optional: Show loading while checking auth
-  if (!token) {
-    return <div>Loading...</div>;
+  const handleHackathonClick = (hackathon: { slug: string }) => {
+    router.push(`/w/${hackathon.slug}`);
+  };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: 400,
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mt: 2 }}>
+        {error}
+      </Alert>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <Alert severity="info" sx={{ mt: 2 }}>
+        No data available
+      </Alert>
+    );
   }
 
   return (
     <>
       <Typography variant="h4" sx={{ mb: { xs: 3, md: 5 } }}>
-        Hi, Welcome back 👋
+        Hi, {adminName}! Welcome back 👋
       </Typography>
 
       <Grid container spacing={3}>
+        {/* Summary Cards */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <AnalyticsWidgetSummary
-            title="Weekly sales"
-            percent={2.6}
-            total={714000}
-            icon={
-              <img
-                alt="Weekly sales"
-                src="/assets/icons/glass/ic-glass-bag.svg"
-              />
-            }
-            chart={{
-              categories: [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-              ],
-              series: [22, 8, 35, 50, 82, 84, 77, 12],
-            }}
+          <StatsCard
+            title="Total Hackathons"
+            total={stats.summary.totalHackathons}
+            icon="mdi:calendar-star"
+            color="primary"
+            subtitle={`${stats.summary.publishedHackathons} published`}
           />
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <AnalyticsWidgetSummary
-            title="New users"
-            percent={-0.1}
-            total={1352831}
-            color="secondary"
-            icon={
-              <img
-                alt="New users"
-                src="/assets/icons/glass/ic-glass-users.svg"
-              />
-            }
-            chart={{
-              categories: [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-              ],
-              series: [56, 47, 40, 62, 73, 30, 23, 54],
-            }}
+          <StatsCard
+            title="Total Participants"
+            total={stats.summary.totalParticipants}
+            icon="mdi:account-group"
+            color="info"
+            subtitle={`${stats.summary.approvedRegistrations} approved`}
           />
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <AnalyticsWidgetSummary
-            title="Purchase orders"
-            percent={2.8}
-            total={1723315}
+          <StatsCard
+            title="Pending Approvals"
+            total={stats.summary.pendingRegistrations}
+            icon="mdi:clock-outline"
             color="warning"
-            icon={
-              <img
-                alt="Purchase orders"
-                src="/assets/icons/glass/ic-glass-buy.svg"
-              />
-            }
-            chart={{
-              categories: [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-              ],
-              series: [40, 70, 50, 28, 70, 75, 7, 64],
-            }}
+            subtitle="Awaiting review"
           />
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <AnalyticsWidgetSummary
-            title="Messages"
-            percent={3.6}
-            total={234}
-            color="error"
-            icon={
-              <img
-                alt="Messages"
-                src="/assets/icons/glass/ic-glass-message.svg"
-              />
-            }
-            chart={{
-              categories: [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-              ],
-              series: [56, 30, 23, 54, 47, 40, 62, 73],
-            }}
+          <StatsCard
+            title="Total Mentors"
+            total={stats.summary.totalMentors}
+            icon="mdi:account-school"
+            color="secondary"
+            subtitle={`${stats.summary.activeMentors} active`}
           />
         </Grid>
 
+        {/* Charts Row */}
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <AnalyticsCurrentVisits
-            title="Participants"
+          <HackathonStatusChart
             chart={{
-              series: [
-                { label: "Khwopa College of Engineering", value: 3500 },
-                { label: "Kathmandu University", value: 2500 },
-                { label: "SXC", value: 1500 },
-                { label: "Hogwarts", value: 500 },
-              ],
+              published: stats.summary.publishedHackathons,
+              draft: stats.summary.draftHackathons,
             }}
           />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 8 }}>
-          <AnalyticsWebsiteVisits
-            title="Website visits"
-            subheader="(+43%) than last year"
-            chart={{
-              categories: [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-              ],
-              series: [
-                { name: "Team A", data: [43, 33, 22, 37, 67, 68, 37, 24, 55] },
-                { name: "Team B", data: [51, 70, 47, 67, 40, 37, 24, 70, 24] },
-              ],
-            }}
+          <HackathonList
+            hackathons={stats.hackathons}
+            onHackathonClick={handleHackathonClick}
           />
         </Grid>
 
+        {/* Bottom Row */}
         <Grid size={{ xs: 12, md: 6, lg: 8 }}>
-          <AnalyticsConversionRates
-            title="Conversion rates"
-            subheader="(+43%) than last year"
-            chart={{
-              categories: ["Italy", "Japan", "China", "Canada", "France"],
-              series: [
-                { name: "2022", data: [44, 55, 41, 64, 22] },
-                { name: "2023", data: [53, 32, 33, 52, 13] },
-              ],
-            }}
-          />
+          <RecentRegistrations registrations={stats.recentRegistrations} />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <AnalyticsCurrentSubject
-            title="Current subject"
-            chart={{
-              categories: [
-                "English",
-                "History",
-                "Physics",
-                "Geography",
-                "Chinese",
-                "Math",
-              ],
-              series: [
-                { name: "Series 1", data: [80, 50, 30, 40, 100, 20] },
-                { name: "Series 2", data: [20, 30, 40, 80, 20, 80] },
-                { name: "Series 3", data: [44, 76, 78, 13, 43, 10] },
-              ],
-            }}
-          />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6, lg: 8 }}>
-          <AnalyticsNews title="News" list={_posts.slice(0, 5)} />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <AnalyticsOrderTimeline title="Order timeline" list={_timeline} />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <AnalyticsTrafficBySite title="Traffic by site" list={_traffic} />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 6, lg: 8 }}>
-          <AnalyticsTasks title="Tasks" list={_tasks} />
+          <QuickActions />
         </Grid>
       </Grid>
     </>

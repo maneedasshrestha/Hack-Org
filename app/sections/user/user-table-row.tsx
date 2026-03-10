@@ -22,11 +22,15 @@ export type ParticipantStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ParticipantProps = {
   id: string;
   name: string;
-  role: string;
+  email?: string;
+  role?: string;
   status: string;
-  company: string;
-  avatarUrl: string;
-  isVerified: boolean;
+  company?: string;
+  avatarUrl?: string;
+  isVerified?: boolean;
+  githubUsername?: string;
+  registeredAt?: string;
+  qrIdentifier?: string;
 };
 
 // Keep backward compatibility
@@ -37,9 +41,10 @@ type UserTableRowProps = {
   selected: boolean;
   onSelectRow: () => void;
   onStatusChange?: (id: string, status: ParticipantStatus) => void;
+  onViewQR?: (participant: ParticipantProps) => void;
 };
 
-export function UserTableRow({ row, selected, onSelectRow, onStatusChange }: UserTableRowProps) {
+export function UserTableRow({ row, selected, onSelectRow, onStatusChange, onViewQR }: UserTableRowProps) {
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -79,6 +84,13 @@ export function UserTableRow({ row, selected, onSelectRow, onStatusChange }: Use
     handleClosePopover();
   };
 
+  const handleViewQR = () => {
+    if (onViewQR) {
+      onViewQR(row);
+    }
+    handleClosePopover();
+  };
+
   return (
     <>
       <TableRow hover tabIndex={-1} role="checkbox" selected={selected}>
@@ -99,20 +111,16 @@ export function UserTableRow({ row, selected, onSelectRow, onStatusChange }: Use
           </Box>
         </TableCell>
 
-        <TableCell>{row.email}</TableCell>
+        <TableCell>{row.email || '-'}</TableCell>
 
-        <TableCell>{row.role}</TableCell>
+        <TableCell>{row.githubUsername || row.role || '-'}</TableCell>
 
-        <TableCell align="center">
-          {row.isVerified ? (
-            <Iconify width={22} icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />
-          ) : (
-            '-'
-          )}
+        <TableCell>
+          {row.registeredAt ? formatDate(row.registeredAt) : '-'}
         </TableCell>
 
         <TableCell>
-          <Label color={getStatusColor(row.status)}>{row.status}</Label>
+          <Label color={getStatusColor(row.status as ParticipantStatus)}>{row.status}</Label>
         </TableCell>
 
         <TableCell align="right">
@@ -145,6 +153,11 @@ export function UserTableRow({ row, selected, onSelectRow, onStatusChange }: Use
             },
           }}
         >
+          <MenuItem onClick={handleViewQR}>
+            <Iconify icon="solar:qr-code-bold" sx={{ color: 'primary.main' }} />
+            View QR
+          </MenuItem>
+
           <MenuItem onClick={() => handleStatusChange('APPROVED')}>
             <Iconify icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />
             Approve

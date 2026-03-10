@@ -452,21 +452,20 @@ export default function WebsiteBuilderPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Toaster richColors position="top-right" />
 
-      {/* Edit Mode Banner */}
+      {/* Edit Mode Indicator - Floating Pill */}
       <AnimatePresence>
         {editMode && (
           <motion.div
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -100, opacity: 0 }}
-            className={`fixed ${websiteStatus === "PUBLISHED" && websiteSlug ? 'top-9' : 'top-0'} left-0 right-0 z-[200] bg-[#1877F2] text-white py-2 px-4 text-center text-sm font-medium shadow-lg`}
+            initial={{ x: -100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -100, opacity: 0 }}
+            className="fixed top-4 left-4 z-[200] bg-[#1877F2] text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2"
           >
-            <div className="flex items-center justify-center gap-2">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-              </svg>
-              Edit Mode Active - Click on any text to edit
-            </div>
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+            </svg>
+            <span>Edit Mode</span>
+            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -537,7 +536,7 @@ export default function WebsiteBuilderPage() {
       </div>
 
       {/* Canvas Area */}
-      <div className={`pb-8 transition-all duration-300 ${editMode ? 'pt-9' : 'pt-0'}`}>
+      <div className="pb-8">
         <div className="max-w-7xl mx-auto">
           <HackathonTemplate
             data={websiteData}
@@ -557,7 +556,7 @@ export default function WebsiteBuilderPage() {
             editMode={editMode}
             websiteStatus={websiteStatus}
             websiteSlug={websiteSlug}
-            stickyNavTop={editMode ? 36 : 0}
+            stickyNavTop={0}
           />
         </div>
       </div>
@@ -827,7 +826,14 @@ function HackathonTemplate({
               <button
                 onClick={() => {
                   const publicUrl = `${window.location.origin}/w/${websiteSlug}`;
-                  navigator.clipboard.writeText(publicUrl);
+                  navigator.clipboard.writeText(publicUrl).then(() => {
+                    toast.success("Link copied to clipboard!", {
+                      description: publicUrl,
+                      duration: 3000,
+                    });
+                  }).catch(() => {
+                    toast.error("Failed to copy link");
+                  });
                 }}
                 className="shrink-0 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs transition-colors"
               >

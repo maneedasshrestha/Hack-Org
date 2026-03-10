@@ -1,11 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
-import { useParams } from "next/navigation";
 import { Copy as CopyIcon, Check as CheckIcon } from "lucide-react";
-import { getHackathonSlug, clearHackathonSlug } from "@/lib/hackathon-context";
 // Copy-to-clipboard button with icon and popup
 function CopyButton({ text, onCopy }: { text: string; onCopy: () => void }) {
   const [copied, setCopied] = useState(false);

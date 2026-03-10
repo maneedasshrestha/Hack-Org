@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useState, useCallback, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -28,6 +27,7 @@ import type { ParticipantProps, ParticipantStatus } from '../user-table-row';
 import { DashboardContent } from '@/app/layouts/dashboard';
 import { Iconify } from '@/components/iconify';
 import { Scrollbar } from '@/components/scrollbar';
+import ParticipantQRModal from '@/components/participant-qr-modal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -50,6 +50,10 @@ export function UserView() {
   const [loading, setLoading] = useState(false);
   const [hackathonsLoading, setHackathonsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // QR Modal state
+  const [qrModalOpen, setQRModalOpen] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<ParticipantProps | null>(null);
 
   // Fetch admin's hackathons on mount
   useEffect(() => {
@@ -97,12 +101,15 @@ export function UserView() {
       setLoading(true);
       setError(null);
       try {
+        console.log('Fetching participants for hackathon:', selectedHackathonId);
         const response = await fetch(`${API_URL}/registration/website/${selectedHackathonId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch participants');
         }
 
         const data = await response.json();
+        console.log('Raw API response:', data);
+        console.log('Number of registrations:', data.registrations?.length);
 
         // Transform registrations to participant format
         const transformedParticipants: ParticipantProps[] = (data.registrations || []).map(
@@ -117,6 +124,7 @@ export function UserView() {
           })
         );
 
+        console.log('Transformed participants:', transformedParticipants);
         setParticipants(transformedParticipants);
       } catch (err) {
         console.error('Error fetching participants:', err);
@@ -150,6 +158,17 @@ export function UserView() {
       console.error('Error updating status:', err);
       alert('Failed to update participant status');
     }
+  };
+
+  // Handle viewing QR code
+  const handleViewQR = (participant: ParticipantProps) => {
+    setSelectedParticipant(participant);
+    setQRModalOpen(true);
+  };
+
+  const handleCloseQRModal = () => {
+    setQRModalOpen(false);
+    setSelectedParticipant(null);
   };
 
   const dataFiltered: ParticipantProps[] = applyFilter({
@@ -265,6 +284,7 @@ export function UserView() {
                         selected={table.selected.includes(row.id)}
                         onSelectRow={() => table.onSelectRow(row.id)}
                         onStatusChange={handleStatusChange}
+                        onViewQR={handleViewQR}
                       />
                     ))}
 
@@ -292,7 +312,16 @@ export function UserView() {
           rowsPerPageOptions={[5, 10, 25]}
           onRowsPerPageChange={table.onChangeRowsPerPage}
         />
-      </Card>
+        </Card>
+      )}
+
+      {/* QR Code Modal */}
+      <ParticipantQRModal
+        open={qrModalOpen}
+        onClose={handleCloseQRModal}
+        participantId={selectedParticipant?.id || ''}
+        registrationId={selectedParticipant?.id}
+      />
     </DashboardContent>
   );
 }

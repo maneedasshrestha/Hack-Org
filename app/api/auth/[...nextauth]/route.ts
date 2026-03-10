@@ -1,5 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
+import { headers } from "next/headers";
 
 // Helper to get hackathon slug from cookie (server-side)
 function getHackathonSlugFromCookie(cookieHeader: string | null): string | null {
@@ -61,16 +62,20 @@ export const authOptions: NextAuthOptions = {
         // Store user data in session
         if (data.user) {
           user.id = data.user.id;
-          
-          // Check if there's a website slug in the callback URL to register the user
-          // The slug will be extracted from the callbackUrl
-          const callbackUrl = (account as any)?.callbackUrl || "";
-          const slugMatch = callbackUrl.match(/\/w\/([^\/]+)/);
-          
-          if (slugMatch && slugMatch[1]) {
-            const slug = slugMatch[1];
-            console.log("Registering user to website with slug:", slug);
-            
+
+          // Get the hackathon slug from the cookie that was set before OAuth redirect
+          let slug: string | null = null;
+          try {
+            const headersList = await headers();
+            const cookieHeader = headersList.get('cookie');
+            slug = getHackathonSlugFromCookie(cookieHeader);
+          } catch (e) {
+            console.error("Error reading headers:", e);
+          }
+
+          if (slug) {
+            console.log("Registering user to website with slug from cookie:", slug);
+
             try {
               const registrationResponse = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/registration/register`,
@@ -96,6 +101,8 @@ export const authOptions: NextAuthOptions = {
               console.error("Error registering user to website:", regError);
               // Don't fail the sign-in if registration fails
             }
+          } else {
+            console.log("No hackathon slug found in cookie, skipping registration");
           }
         }
 
