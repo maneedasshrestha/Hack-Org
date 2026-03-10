@@ -1,7 +1,7 @@
 "use client";
 import type { ButtonBaseProps } from "@mui/material/ButtonBase";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { varAlpha } from "minimal-shared/utils";
 
 import Box from "@mui/material/Box";
@@ -20,6 +20,8 @@ export type WorkspacesPopoverProps = ButtonBaseProps & {
     name: string;
     logo: string;
     plan: string;
+    joinCode?: string;
+    website?: any;
   }[];
 };
 
@@ -33,6 +35,15 @@ export function WorkspacesPopover({
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(
     null,
   );
+
+  // Update workspace when data changes
+  useEffect(() => {
+    if (data.length > 0) {
+      const selectedId = localStorage.getItem("selectedHackathonId");
+      const selected = data.find((w) => w.id === selectedId) || data[0];
+      setWorkspace(selected);
+    }
+  }, [data]);
 
   const handleOpenPopover = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -48,7 +59,15 @@ export function WorkspacesPopover({
   const handleChangeWorkspace = useCallback(
     (newValue: (typeof data)[number]) => {
       setWorkspace(newValue);
+      // Store selected hackathon in localStorage
+      localStorage.setItem("selectedHackathonId", newValue.id);
+      localStorage.setItem("selectedHackathonName", newValue.name);
+      if (newValue.website?.id) {
+        localStorage.setItem("currentWebsiteId", newValue.website.id);
+      }
       handleClosePopover();
+      // Trigger a custom event for other components to listen to
+      window.dispatchEvent(new CustomEvent("hackathonChanged", { detail: newValue }));
     },
     [handleClosePopover],
   );
@@ -63,8 +82,45 @@ export function WorkspacesPopover({
   );
 
   const renderLabel = (plan: string) => (
-    <Label color={plan === "Free" ? "default" : "info"}>{plan}</Label>
+    <Label color={plan === "Member" ? "default" : "info"}>{plan}</Label>
   );
+
+  // Show placeholder if no hackathons
+  if (data.length === 0) {
+    return (
+      <ButtonBase
+        disableRipple
+        sx={{
+          pl: 2,
+          py: 3,
+          gap: 1.5,
+          pr: 1.5,
+          width: 1,
+          borderRadius: 1.5,
+          textAlign: "left",
+          justifyContent: "flex-start",
+          bgcolor: (theme) =>
+            varAlpha(theme.vars.palette.grey["500Channel"], 0.08),
+          ...sx,
+        }}
+        {...other}
+      >
+        <Box
+          component="span"
+          sx={{
+            gap: 1,
+            flexGrow: 1,
+            display: "flex",
+            alignItems: "center",
+            typography: "body2",
+            fontWeight: "fontWeightSemiBold",
+          }}
+        >
+          No Hackathons
+        </Box>
+      </ButtonBase>
+    );
+  }
 
   return (
     <>
@@ -86,7 +142,7 @@ export function WorkspacesPopover({
         }}
         {...other}
       >
-        {renderAvatar(workspace?.name, workspace?.logo)}
+        {renderAvatar(workspace?.name || "Hackathon", workspace?.logo || "/assets/icons/workspaces/logo-1.webp")}
 
         <Box
           sx={{
@@ -99,7 +155,7 @@ export function WorkspacesPopover({
           }}
         >
           {workspace?.name}
-          {renderLabel(workspace?.plan)}
+          {renderLabel(workspace?.plan || "Member")}
         </Box>
 
         <Iconify

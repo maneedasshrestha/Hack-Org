@@ -1,7 +1,7 @@
 "use client";
 import type { Theme, SxProps, Breakpoint } from "@mui/material/styles";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { varAlpha } from "minimal-shared/utils";
 
 import Box from "@mui/material/Box";
@@ -19,6 +19,8 @@ import { Logo } from "@/components/logo";
 import { Scrollbar } from "@/components/scrollbar";
 import { RouterLink } from "@/app/routes/components";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 // ----------------------------------------------------------------------
 
 export type NavContentProps = {
@@ -27,7 +29,7 @@ export type NavContentProps = {
     topArea?: React.ReactNode;
     bottomArea?: React.ReactNode;
   };
-  workspaces: WorkspacesPopoverProps["data"];
+  workspaces?: WorkspacesPopoverProps["data"];
   sx?: SxProps<Theme>;
 };
 
@@ -39,6 +41,43 @@ export function NavDesktop({
   layoutQuery,
 }: NavContentProps & { layoutQuery: Breakpoint }) {
   const theme = useTheme();
+
+  const [hackathons, setHackathons] = useState<WorkspacesPopoverProps["data"]>([]);
+
+  useEffect(() => {
+    fetchHackathons();
+  }, []);
+
+  const fetchHackathons = async () => {
+    const adminId = localStorage.getItem("adminId");
+    if (!adminId) return;
+
+    try {
+      const response = await fetch(`${API_URL}/hackathon/my/${adminId}`);
+      const result = await response.json();
+
+      if (result.success && result.hackathons) {
+        const workspaceData = result.hackathons.map((h: any) => ({
+          id: h.id.toString(),
+          name: h.name,
+          logo: "/assets/icons/workspaces/logo-1.webp", // Default logo
+          plan: h.role === "OWNER" ? "Owner" : "Member",
+          joinCode: h.joinCode,
+          website: h.website,
+        }));
+        setHackathons(workspaceData);
+
+        // Set first hackathon as selected if none selected
+        const selectedHackathonId = localStorage.getItem("selectedHackathonId");
+        if (!selectedHackathonId && workspaceData.length > 0) {
+          localStorage.setItem("selectedHackathonId", workspaceData[0].id);
+          localStorage.setItem("selectedHackathonName", workspaceData[0].name);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching hackathons:", error);
+    }
+  };
 
   return (
     <Box
@@ -60,7 +99,7 @@ export function NavDesktop({
         ...sx,
       }}
     >
-      <NavContent data={data} slots={slots} workspaces={workspaces} />
+      <NavContent data={data} slots={slots} workspaces={hackathons} />
     </Box>
   );
 }
@@ -76,6 +115,7 @@ export function NavMobile({
   workspaces,
 }: NavContentProps & { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const [hackathons, setHackathons] = useState<WorkspacesPopoverProps["data"]>([]);
 
   useEffect(() => {
     if (open) {
@@ -83,6 +123,40 @@ export function NavMobile({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  useEffect(() => {
+    fetchHackathons();
+  }, []);
+
+  const fetchHackathons = async () => {
+    const adminId = localStorage.getItem("adminId");
+    if (!adminId) return;
+
+    try {
+      const response = await fetch(`${API_URL}/hackathon/my/${adminId}`);
+      const result = await response.json();
+
+      if (result.success && result.hackathons) {
+        const workspaceData = result.hackathons.map((h: any) => ({
+          id: h.id.toString(),
+          name: h.name,
+          logo: "/assets/icons/workspaces/logo-1.webp",
+          plan: h.role === "OWNER" ? "Owner" : "Member",
+          joinCode: h.joinCode,
+          website: h.website,
+        }));
+        setHackathons(workspaceData);
+
+        const selectedHackathonId = localStorage.getItem("selectedHackathonId");
+        if (!selectedHackathonId && workspaceData.length > 0) {
+          localStorage.setItem("selectedHackathonId", workspaceData[0].id);
+          localStorage.setItem("selectedHackathonName", workspaceData[0].name);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching hackathons:", error);
+    }
+  };
 
   return (
     <Drawer
@@ -98,14 +172,14 @@ export function NavMobile({
         },
       }}
     >
-      <NavContent data={data} slots={slots} workspaces={workspaces} />
+      <NavContent data={data} slots={slots} workspaces={hackathons} />
     </Drawer>
   );
 }
 
 // ----------------------------------------------------------------------
 
-export function NavContent({ data, slots, workspaces, sx }: NavContentProps) {
+export function NavContent({ data, slots, workspaces = [], sx }: NavContentProps) {
   const pathname = usePathname();
 
   return (

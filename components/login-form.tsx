@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Iconify } from "@/components/iconify";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export function LoginForm({
   className,
   ...props
@@ -25,7 +27,7 @@ export function LoginForm({
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/loginadmin`,
+        `${API_URL}/loginadmin`,
         {
           method: "POST",
           headers: {
@@ -45,12 +47,17 @@ export function LoginForm({
       localStorage.setItem("token", result.token);
       localStorage.setItem("adminId", result.id);
       localStorage.setItem("adminEmail", result.email);
+      localStorage.setItem("adminName", result.fullname);
       // Clear any previous website ID to prevent conflicts
       localStorage.removeItem("currentWebsiteId");
       console.log("Token obtained:", result.token);
 
-      // Redirect to dashboard after successful authentication
-      window.location.href = "/dashboard";
+      // Check onboarding status and redirect accordingly
+      if (result.onboardingCompleted === false) {
+        window.location.href = "/onboarding";
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

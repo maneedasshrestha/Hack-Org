@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Iconify } from "@/components/iconify";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export function SignupForm({
   className,
   ...props
@@ -39,7 +41,7 @@ export function SignupForm({
     try {
       console.log("Sending request to backend...");
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/createadmin`,
+        `${API_URL}/createadmin`,
         {
           method: "POST",
           headers: {
@@ -61,8 +63,14 @@ export function SignupForm({
 
       console.log("Account created successfully:", result);
 
-      // Redirect to login page or dashboard
-      window.location.href = "/login";
+      // Store admin info in localStorage for onboarding page
+      localStorage.setItem("adminId", result.id);
+      localStorage.setItem("adminEmail", result.email);
+      localStorage.setItem("adminName", result.fullname);
+      localStorage.setItem("token", result.token || "");
+
+      // Redirect to onboarding page
+      window.location.href = "/onboarding";
     } catch (err) {
       console.error("Full error:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
