@@ -41,6 +41,8 @@ export default function QRScanner({
   const [hasStarted, setHasStarted] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isProcessingRef = useRef(false); // Prevent multiple scan callbacks
+  const isRunningRef = useRef(false); // Track if scanner is actively running
 
   const formatScannerError = (err: unknown, fallback: string) => {
     const baseMessage = err instanceof Error ? err.message : fallback;
@@ -99,9 +101,23 @@ export default function QRScanner({
               qrbox: { width: 250, height: 250 },
               aspectRatio: 1.0,
             },
-            (decodedText) => {
-              onScanSuccess(decodedText);
+            async (decodedText) => {
+              // Prevent multiple callbacks using ref (synchronous check)
+              if (isProcessingRef.current) return;
+              isProcessingRef.current = true;
               setIsScanning(false);
+
+              // Stop scanner immediately to prevent further scans
+              if (isRunningRef.current) {
+                try {
+                  await scanner.stop();
+                  isRunningRef.current = false;
+                } catch (e) {
+                  console.debug("Error stopping scanner:", e);
+                }
+              }
+
+              onScanSuccess(decodedText);
             },
             (errorMessage) => {
               console.debug("QR scan error:", errorMessage);
@@ -109,6 +125,7 @@ export default function QRScanner({
           ),
           8000,
         );
+        isRunningRef.current = true; // Mark as running after successful start
         return;
       } catch (err) {
         if (isNotReadableError(err) && attempt === 0) {
@@ -180,10 +197,12 @@ export default function QRScanner({
 
   useEffect(() => {
     return () => {
-      if (scannerRef.current) {
+      // Cleanup on unmount - only stop if running
+      if (scannerRef.current && isRunningRef.current) {
         scannerRef.current
           .stop()
           .then(() => {
+            isRunningRef.current = false;
             if (scannerRef.current) {
               return scannerRef.current.clear();
             }
@@ -196,8 +215,10 @@ export default function QRScanner({
   // Handle camera change
   const handleCameraChange = async (newCameraId: string) => {
     try {
-      if (scannerRef.current) {
+      if (scannerRef.current && isRunningRef.current) {
         await scannerRef.current.stop();
+        isRunningRef.current = false;
+
         await withTimeout(
           scannerRef.current.start(
             newCameraId,
@@ -205,9 +226,23 @@ export default function QRScanner({
               fps: 10,
               qrbox: { width: 250, height: 250 },
             },
-            (decodedText) => {
-              onScanSuccess(decodedText);
+            async (decodedText) => {
+              // Prevent multiple callbacks using ref (synchronous check)
+              if (isProcessingRef.current) return;
+              isProcessingRef.current = true;
               setIsScanning(false);
+
+              // Stop scanner immediately to prevent further scans
+              if (isRunningRef.current) {
+                try {
+                  await scannerRef.current?.stop();
+                  isRunningRef.current = false;
+                } catch (e) {
+                  console.debug("Error stopping scanner:", e);
+                }
+              }
+
+              onScanSuccess(decodedText);
             },
             () => {
               // Suppress error messages during scanning
@@ -215,6 +250,7 @@ export default function QRScanner({
           ),
           8000,
         );
+        isRunningRef.current = true;
         setSelectedCameraId(newCameraId);
       }
     } catch (err) {
@@ -223,15 +259,19 @@ export default function QRScanner({
   };
 
   const handleClose = () => {
-    if (scannerRef.current) {
+    if (scannerRef.current && isRunningRef.current) {
       scannerRef.current
         .stop()
         .then(() => {
+          isRunningRef.current = false;
           if (scannerRef.current) {
             return scannerRef.current.clear();
           }
         })
         .catch(() => {});
+    } else if (scannerRef.current) {
+      // Scanner exists but not running, just clear it
+      scannerRef.current.clear().catch(() => {});
     }
     onClose();
   };

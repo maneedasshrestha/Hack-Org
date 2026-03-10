@@ -77,6 +77,7 @@ export function HackathonList({
               </ListItemAvatar>
 
               <ListItemText
+                primaryTypographyProps={{ component: "div" }}
                 primary={
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Box
@@ -99,6 +100,7 @@ export function HackathonList({
                     </Label>
                   </Box>
                 }
+                secondaryTypographyProps={{ component: "div" }}
                 secondary={
                   <Box
                     sx={{
