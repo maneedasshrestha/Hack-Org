@@ -464,20 +464,17 @@ export default function WebsiteBuilderPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Toaster richColors position="top-right" />
 
-      {/* Edit Mode Indicator - Floating Pill */}
+      {/* Edit Mode Indicator - Minimal Dot Badge */}
       <AnimatePresence>
         {editMode && (
           <motion.div
-            initial={{ x: -100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -100, opacity: 0 }}
-            className="fixed top-4 left-4 z-[200] bg-[#1877F2] text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg flex items-center gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed top-3 right-3 z-[200] flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400"
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-            </svg>
-            <span>Edit Mode</span>
-            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span>Editing</span>
           </motion.div>
         )}
       </AnimatePresence>
