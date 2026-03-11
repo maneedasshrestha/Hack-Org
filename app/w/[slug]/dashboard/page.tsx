@@ -1,7 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useParams, useRouter } from "next/navigation";
 import { Copy as CopyIcon, Check as CheckIcon } from "lucide-react";
+import Link from "next/link";
 // Copy-to-clipboard button with icon and popup
 function CopyButton({ text, onCopy }: { text: string; onCopy: () => void }) {
   const [copied, setCopied] = useState(false);
@@ -48,13 +50,22 @@ import TextField from "@mui/material/TextField";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import Card from "@mui/material/Card";
+import Box from "@mui/material/Box";
+import { Iconify } from "@/components/iconify";
 // import { _users } from "@/app/_mock";
 
 const MAX_GROUP_SIZE = 4;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const DashBoardParticipant = () => {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const params = useParams();
+  const slug = params?.slug as string;
   const [showCopiedPopup, setShowCopiedPopup] = useState(false);
+  const [hackathonId, setHackathonId] = useState<number | null>(null);
+  const [isJudge, setIsJudge] = useState(false);
   // Group state (keep for now, but focus on user details)
   const [group, setGroup] = useState<{
     name: string;
@@ -70,6 +81,25 @@ const DashBoardParticipant = () => {
   const [groupName, setGroupName] = useState("");
   const [groupCode, setGroupCode] = useState("");
   const [error, setError] = useState("");
+
+  // Fetch hackathon info and check if user is a judge
+  useEffect(() => {
+    const fetchHackathonInfo = async () => {
+      try {
+        const res = await fetch(`${API_URL}/website/slug/${slug}`);
+        const data = await res.json();
+        if (data.success && data.website?.hackathon?.id) {
+          setHackathonId(data.website.hackathon.id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch hackathon info:", err);
+      }
+    };
+
+    if (slug) {
+      fetchHackathonInfo();
+    }
+  }, [slug]);
 
   // Leave group handler
   const handleLeaveGroup = () => {
@@ -180,6 +210,35 @@ const DashBoardParticipant = () => {
         </Typography>
 
         <div className="h-2"></div>
+
+        {/* Quick Actions Section */}
+        <Card sx={{ width: "100%", p: 2, mb: 3, bgcolor: "grey.50" }}>
+          <Typography variant="subtitle2" sx={{ mb: 2, color: "text.secondary" }}>
+            Quick Actions
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Link href={`/w/${slug}/dashboard/submit`}>
+              <Button variant="default" size="sm" className="gap-2">
+                <Iconify icon="mdi:upload" width={16} />
+                Submit Project
+              </Button>
+            </Link>
+            <Link href={`/w/${slug}/dashboard/judging`}>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Iconify icon="mdi:trophy" width={16} />
+                Leaderboard
+              </Button>
+            </Link>
+            {isJudge && (
+              <Link href={`/w/${slug}/dashboard/judge`}>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Iconify icon="mdi:gavel" width={16} />
+                  Judge Dashboard
+                </Button>
+              </Link>
+            )}
+          </Stack>
+        </Card>
 
         {/* Group state (kept for now) */}
         {!group && (
