@@ -1,5 +1,5 @@
 "use client";
-import type { ButtonBaseProps } from "@mui/material/ButtonBase";
+import type { BoxProps } from "@mui/material/Box";
 
 import { useState, useCallback } from "react";
 import { varAlpha } from "minimal-shared/utils";
@@ -21,22 +21,16 @@ import Alert from "@mui/material/Alert";
 import { Label } from "@/components/label";
 import { Iconify } from "@/components/iconify";
 import { toast } from "sonner";
+import type { Hackathon } from "@/contexts/HackathonContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ----------------------------------------------------------------------
 
-export type WorkspacesPopoverProps = ButtonBaseProps & {
+export type WorkspacesPopoverProps = BoxProps & {
   selectedHackathonId?: string | null;
   selectedHackathonName?: string | null;
-  hackathons: {
-    id: string;
-    name: string;
-    logo: string;
-    plan: string;
-    joinCode?: string;
-    website?: any;
-  }[];
+  hackathons: Hackathon[];
   onHackathonChange?: (id: string, name: string) => void;
   onHackathonJoined?: () => void;
 };
@@ -168,11 +162,11 @@ export function WorkspacesPopover({
     }
   }, [joinCode, handleCloseJoinDialog, onHackathonJoined]);
 
-  const renderAvatar = (alt: string, src: string) => (
+  const renderAvatar = (alt: string, src?: string) => (
     <Box
       component="img"
       alt={alt}
-      src={src}
+      src={src || "/assets/icons/workspaces/logo-1.webp"}
       sx={{ width: 24, height: 24, borderRadius: "50%" }}
     />
   );
@@ -185,46 +179,46 @@ export function WorkspacesPopover({
   if (hackathons.length === 0) {
     return (
       <>
-        <ButtonBase
-          disableRipple
-          sx={{
-            pl: 2,
-            py: 3,
-            gap: 1.5,
-            pr: 1.5,
-            width: 1,
-            borderRadius: 1.5,
-            textAlign: "left",
-            justifyContent: "flex-start",
-            bgcolor: (theme) =>
-              varAlpha(theme.vars.palette.grey["500Channel"], 0.08),
-            ...sx,
-          }}
-          {...other}
-        >
-          <Box
-            component="span"
+        <Box sx={{ position: "relative", ...sx }} {...other}>
+          <ButtonBase
+            disableRipple
             sx={{
-              gap: 1,
-              flexGrow: 1,
-              display: "flex",
-              alignItems: "center",
-              typography: "body2",
-              fontWeight: "fontWeightSemiBold",
+              pl: 2,
+              py: 3,
+              gap: 1.5,
+              pr: 1.5,
+              width: 1,
+              borderRadius: 1.5,
+              textAlign: "left",
+              justifyContent: "flex-start",
+              bgcolor: (theme) =>
+                varAlpha(theme.vars.palette.grey["500Channel"], 0.08),
             }}
           >
-            No Hackathons
-          </Box>
-        </ButtonBase>
-        <Button
-          fullWidth
-          variant="soft"
-          startIcon={<Iconify icon="mdi:plus" />}
-          onClick={handleOpenJoinDialog}
-          sx={{ mt: 1 }}
-        >
-          Join Hackathon
-        </Button>
+            <Box
+              component="span"
+              sx={{
+                gap: 1,
+                flexGrow: 1,
+                display: "flex",
+                alignItems: "center",
+                typography: "body2",
+                fontWeight: "fontWeightSemiBold",
+              }}
+            >
+              No Hackathons
+            </Box>
+          </ButtonBase>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<Iconify icon="mingcute:add-line" />}
+            onClick={handleOpenJoinDialog}
+            sx={{ mt: 1 }}
+          >
+            Join Hackathon
+          </Button>
+        </Box>
 
         {/* Join Hackathon Dialog */}
         <Dialog open={joinDialogOpen} onClose={handleCloseJoinDialog} maxWidth="xs" fullWidth>

@@ -30,9 +30,15 @@ type StatsData = {
   };
   hackathons: Array<{
     id: number;
-    title: string;
-    slug: string;
-    status: string;
+    name: string;
+    joinCode: string;
+    role: string;
+    website: {
+      id: number;
+      title: string;
+      slug: string;
+      status: string;
+    };
     participantCount: number;
     mentorCount: number;
     updatedAt: string;
@@ -94,8 +100,8 @@ export function OverviewAnalyticsView() {
     fetchData();
   }, [router]);
 
-  const handleHackathonClick = (hackathon: { slug: string }) => {
-    router.push(`/w/${hackathon.slug}`);
+  const handleHackathonClick = (hackathon: { website: { slug: string } }) => {
+    router.push(`/w/${hackathon.website.slug}`);
   };
 
   if (loading) {

@@ -13,6 +13,7 @@ import Drawer, { drawerClasses } from "@mui/material/Drawer";
 import { WorkspacesPopover } from "../components/workspaces-popover";
 
 import type { NavItem } from "../nav-config-dashboard";
+import type { Hackathon } from "@/contexts/HackathonContext";
 import { usePathname } from "@/app/routes/hooks";
 import { Logo } from "@/components/logo";
 import { Scrollbar } from "@/components/scrollbar";
@@ -137,14 +138,7 @@ export function NavMobile({
 type NavContentWithHackathonProps = NavContentProps & {
   selectedHackathonId: string | null;
   selectedHackathonName: string | null;
-  hackathons: {
-    id: string;
-    name: string;
-    logo: string;
-    plan: string;
-    joinCode?: string;
-    website?: any;
-  }[];
+  hackathons: Hackathon[];
   onHackathonChange: (id: string, name: string) => void;
   onHackathonJoined?: () => void;
 };
