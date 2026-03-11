@@ -17,9 +17,15 @@ import { fDate } from "@/app/utils/format-time";
 
 type HackathonItem = {
   id: number;
-  title: string;
-  slug: string;
-  status: string;
+  name: string;
+  joinCode: string;
+  role: string;
+  website: {
+    id: number;
+    title: string;
+    slug: string;
+    status: string;
+  };
   participantCount: number;
   mentorCount: number;
   updatedAt: string;
@@ -89,14 +95,14 @@ export function HackathonList({
                         maxWidth: 200,
                       }}
                     >
-                      {hackathon.title}
+                      {hackathon.name}
                     </Box>
                     <Label
                       variant="soft"
-                      color={hackathon.status === "PUBLISHED" ? "success" : "warning"}
+                      color={hackathon.website?.status === "PUBLISHED" ? "success" : "warning"}
                       sx={{ ml: "auto" }}
                     >
-                      {hackathon.status}
+                      {hackathon.website?.status || "DRAFT"}
                     </Label>
                   </Box>
                 }

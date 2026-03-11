@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toaster";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { useHackathon } from "@/contexts/HackathonContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -98,6 +99,15 @@ export default function WebsiteBuilderPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Use global hackathon context
+  const {
+    selectedHackathonId,
+    selectedHackathonName,
+    hackathons,
+    loading: hackathonsLoading,
+    getSelectedWebsiteId,
+  } = useHackathon();
+
   useEffect(() => {
     if (isEditing) {
       if (inputRef.current) inputRef.current.focus();
@@ -105,58 +115,57 @@ export default function WebsiteBuilderPage() {
     }
   }, [isEditing]);
 
-  // Fetch admin's websites on mount
+  // Fetch website when selected hackathon changes
   useEffect(() => {
-    const loadAdminWebsite = async () => {
-      try {
-        const adminId = localStorage.getItem('adminId');
-        
-        if (!adminId) {
-          // No admin logged in, use default data
-          console.log('No admin logged in, using default data');
-          setIsLoading(false);
-          return;
-        }
+    const loadWebsite = async () => {
+      const websiteId = getSelectedWebsiteId();
 
-        console.log('Fetching websites for admin:', adminId);
-        
-        const response = await fetch(`${API_URL}/websites/admin/${adminId}`);
-        
+      if (!websiteId) {
+        // No website for selected hackathon, use default data
+        console.log('No website for selected hackathon, using default data');
+        setWebsiteData(normalizeWebsiteData(defaultData));
+        setWebsiteStatus("DRAFT");
+        setWebsiteSlug("");
+        localStorage.removeItem('currentWebsiteId');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        console.log('Fetching website:', websiteId);
+
+        const response = await fetch(`${API_URL}/website/${websiteId}`);
+
         if (!response.ok) {
-          console.error('Failed to fetch websites:', response.statusText);
+          console.error('Failed to fetch website:', response.statusText);
+          if (response.status === 404) {
+            // Website doesn't exist yet, use default data
+            setWebsiteData(normalizeWebsiteData(defaultData));
+            setWebsiteStatus("DRAFT");
+            setWebsiteSlug("");
+          }
           setIsLoading(false);
           return;
         }
 
         const data = await response.json();
-        console.log('Fetched websites:', data);
+        console.log('Fetched website:', data);
 
-        if (data.success && data.websites && data.websites.length > 0) {
-          // Load the most recent website (they're already ordered by updatedAt desc)
-          const mostRecentWebsite = data.websites[0];
-          
-          console.log('Loading most recent website:', mostRecentWebsite);
-          
-          // Set the website data from the database
-          setWebsiteData(normalizeWebsiteData(mostRecentWebsite.websiteData));
-          setWebsiteStatus(mostRecentWebsite.status || "DRAFT");
-          setWebsiteSlug(mostRecentWebsite.slug || "");
-          
-          // Save the current website ID for updates
-          localStorage.setItem('currentWebsiteId', mostRecentWebsite.id.toString());
-          
-          toast.success('Loaded your saved website', {
-            description: `Last updated: ${new Date(mostRecentWebsite.updatedAt).toLocaleDateString()}`,
-            duration: 3000,
+        if (data.success && data.website) {
+          setWebsiteData(normalizeWebsiteData(data.website.websiteData));
+          setWebsiteStatus(data.website.status || "DRAFT");
+          setWebsiteSlug(data.website.slug || "");
+
+          localStorage.setItem('currentWebsiteId', data.website.id.toString());
+
+          toast.success('Website loaded', {
+            description: `Editing: ${selectedHackathonName || 'Hackathon'}`,
+            duration: 2000,
           });
-        } else {
-          // Admin has no websites, use default data and clear any old website ID
-          console.log('No websites found for admin, using default data');
-          localStorage.removeItem('currentWebsiteId'); // Clear old website ID
         }
       } catch (error) {
-        console.error('Error loading admin website:', error);
-        toast.error('Failed to load your website', {
+        console.error('Error loading website:', error);
+        toast.error('Failed to load website', {
           description: 'Using default content instead',
           duration: 3000,
         });
@@ -165,8 +174,11 @@ export default function WebsiteBuilderPage() {
       }
     };
 
-    loadAdminWebsite();
-  }, []); // Run once on mount
+    // Only fetch after hackathons are loaded
+    if (!hackathonsLoading) {
+      loadWebsite();
+    }
+  }, [selectedHackathonId, hackathonsLoading, getSelectedWebsiteId, selectedHackathonName]);
 
   const handleDoubleClick = (
     path: string,

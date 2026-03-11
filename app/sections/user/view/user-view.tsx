@@ -28,15 +28,9 @@ import { DashboardContent } from '@/app/layouts/dashboard';
 import { Iconify } from '@/components/iconify';
 import { Scrollbar } from '@/components/scrollbar';
 import ParticipantQRModal from '@/components/participant-qr-modal';
+import { useHackathon } from '@/contexts/HackathonContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-type Hackathon = {
-  id: number;
-  slug: string;
-  title: string;
-  status: string;
-};
 
 // ----------------------------------------------------------------------
 
@@ -45,50 +39,21 @@ export function UserView() {
 
   const [filterName, setFilterName] = useState('');
   const [participants, setParticipants] = useState<ParticipantProps[]>([]);
-  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
-  const [selectedHackathonId, setSelectedHackathonId] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [hackathonsLoading, setHackathonsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // QR Modal state
   const [qrModalOpen, setQRModalOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<ParticipantProps | null>(null);
 
-  // Fetch admin's hackathons on mount
-  useEffect(() => {
-    const fetchHackathons = async () => {
-      try {
-        // Get adminId from localStorage (set during admin login)
-        const adminId = localStorage.getItem('adminId');
-        if (!adminId) {
-          setHackathonsLoading(false);
-          setError('Please log in as an admin to view participants');
-          return;
-        }
-
-        const response = await fetch(`${API_URL}/websites/admin/${adminId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch hackathons');
-        }
-
-        const data = await response.json();
-        setHackathons(data.websites || []);
-
-        // Auto-select first hackathon if available
-        if (data.websites && data.websites.length > 0) {
-          setSelectedHackathonId(data.websites[0].id.toString());
-        }
-      } catch (err) {
-        console.error('Error fetching hackathons:', err);
-        setError('Failed to load hackathons');
-      } finally {
-        setHackathonsLoading(false);
-      }
-    };
-
-    fetchHackathons();
-  }, []);
+  // Use global hackathon context
+  const {
+    selectedHackathonId,
+    selectedHackathonName,
+    hackathons,
+    loading: hackathonsLoading,
+    setSelectedHackathon,
+  } = useHackathon();
 
   // Fetch participants when hackathon is selected
   useEffect(() => {
@@ -102,7 +67,7 @@ export function UserView() {
       setError(null);
       try {
         console.log('Fetching participants for hackathon:', selectedHackathonId);
-        const response = await fetch(`${API_URL}/registration/website/${selectedHackathonId}`);
+        const response = await fetch(`${API_URL}/registration/hackathon/${selectedHackathonId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch participants');
         }
@@ -171,6 +136,14 @@ export function UserView() {
     setSelectedParticipant(null);
   };
 
+  // Handle hackathon selection change - sync with global state
+  const handleHackathonChange = (hackathonId: string) => {
+    const hackathon = hackathons.find(h => h.id === hackathonId);
+    if (hackathon) {
+      setSelectedHackathon(hackathon.id, hackathon.name);
+    }
+  };
+
   const dataFiltered: ParticipantProps[] = applyFilter({
     inputData: participants,
     comparator: getComparator(table.order, table.orderBy),
@@ -194,19 +167,19 @@ export function UserView() {
           Participants
         </Typography>
 
-        {/* Hackathon Selector */}
+        {/* Hackathon Selector - synced with global state */}
         <FormControl sx={{ minWidth: 200 }}>
           <InputLabel id="hackathon-select-label">Select Hackathon</InputLabel>
           <Select
             labelId="hackathon-select-label"
-            value={selectedHackathonId}
+            value={selectedHackathonId || ''}
             label="Select Hackathon"
-            onChange={(e) => setSelectedHackathonId(e.target.value)}
+            onChange={(e) => handleHackathonChange(e.target.value)}
             disabled={hackathonsLoading || hackathons.length === 0}
           >
             {hackathons.map((hackathon) => (
-              <MenuItem key={hackathon.id} value={hackathon.id.toString()}>
-                {hackathon.title}
+              <MenuItem key={hackathon.id} value={hackathon.id}>
+                {hackathon.name}
               </MenuItem>
             ))}
           </Select>
@@ -219,13 +192,15 @@ export function UserView() {
         </Alert>
       )}
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
+      {hackathonsLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+          <CircularProgress />
+        </Box>
+      ) : !selectedHackathonId ? (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Select a hackathon to view participants
         </Alert>
-      )}
-
-      {loading ? (
+      ) : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
           <CircularProgress />
         </Box>

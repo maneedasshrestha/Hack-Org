@@ -18,6 +18,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import { Iconify } from '@/components/iconify';
 import { DashboardContent } from '@/app/layouts/dashboard';
+import { useHackathon } from '@/contexts/HackathonContext';
 
 import { MentorCard } from '../mentor-card';
 import { MentorForm } from '../mentor-form';
@@ -25,19 +26,9 @@ import type { MentorProps, MentorFormData } from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-type Hackathon = {
-  id: number;
-  slug: string;
-  title: string;
-  status: string;
-};
-
 export function MentorsView() {
   const [mentors, setMentors] = useState<MentorProps[]>([]);
-  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
-  const [selectedHackathonId, setSelectedHackathonId] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [hackathonsLoading, setHackathonsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Form state
@@ -49,39 +40,14 @@ export function MentorsView() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [mentorToDelete, setMentorToDelete] = useState<string | null>(null);
 
-  // Fetch admin's hackathons on mount
-  useEffect(() => {
-    const fetchHackathons = async () => {
-      try {
-        const adminId = localStorage.getItem('adminId');
-        if (!adminId) {
-          setHackathonsLoading(false);
-          setError('Please log in as an admin to manage mentors');
-          return;
-        }
-
-        const response = await fetch(`${API_URL}/websites/admin/${adminId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch hackathons');
-        }
-
-        const data = await response.json();
-        setHackathons(data.websites || []);
-
-        // Auto-select first hackathon if available
-        if (data.websites && data.websites.length > 0) {
-          setSelectedHackathonId(data.websites[0].id.toString());
-        }
-      } catch (err) {
-        console.error('Error fetching hackathons:', err);
-        setError('Failed to load hackathons');
-      } finally {
-        setHackathonsLoading(false);
-      }
-    };
-
-    fetchHackathons();
-  }, []);
+  // Use global hackathon context
+  const {
+    selectedHackathonId,
+    selectedHackathonName,
+    hackathons,
+    loading: hackathonsLoading,
+    setSelectedHackathon,
+  } = useHackathon();
 
   // Fetch mentors when hackathon is selected
   useEffect(() => {
@@ -94,7 +60,7 @@ export function MentorsView() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_URL}/mentor/website/${selectedHackathonId}`);
+        const response = await fetch(`${API_URL}/mentor/hackathon/${selectedHackathonId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch mentors');
         }
@@ -176,7 +142,7 @@ export function MentorsView() {
     try {
       const payload = {
         ...data,
-        websiteId: selectedHackathonId,
+        hackathonId: selectedHackathonId,
       };
 
       let response;
@@ -203,7 +169,7 @@ export function MentorsView() {
       const result = await response.json();
 
       // Refresh mentors list
-      const mentorsResponse = await fetch(`${API_URL}/mentor/website/${selectedHackathonId}`);
+      const mentorsResponse = await fetch(`${API_URL}/mentor/hackathon/${selectedHackathonId}`);
       if (mentorsResponse.ok) {
         const mentorsData = await mentorsResponse.json();
         const transformedMentors: MentorProps[] = (mentorsData.mentors || []).map(
@@ -235,6 +201,14 @@ export function MentorsView() {
     }
   };
 
+  // Handle hackathon selection change - sync with global state
+  const handleHackathonChange = (hackathonId: string) => {
+    const hackathon = hackathons.find(h => h.id === hackathonId);
+    if (hackathon) {
+      setSelectedHackathon(hackathon.id, hackathon.name);
+    }
+  };
+
   return (
     <DashboardContent>
       {/* Header */}
@@ -251,19 +225,19 @@ export function MentorsView() {
           Mentors
         </Typography>
 
-        {/* Hackathon Selector */}
+        {/* Hackathon Selector - synced with global state */}
         <FormControl sx={{ minWidth: 200 }}>
           <InputLabel id="hackathon-select-label">Select Hackathon</InputLabel>
           <Select
             labelId="hackathon-select-label"
-            value={selectedHackathonId}
+            value={selectedHackathonId || ''}
             label="Select Hackathon"
-            onChange={(e) => setSelectedHackathonId(e.target.value)}
+            onChange={(e) => handleHackathonChange(e.target.value)}
             disabled={hackathonsLoading || hackathons.length === 0}
           >
             {hackathons.map((hackathon) => (
-              <MenuItem key={hackathon.id} value={hackathon.id.toString()}>
-                {hackathon.title}
+              <MenuItem key={hackathon.id} value={hackathon.id}>
+                {hackathon.name}
               </MenuItem>
             ))}
           </Select>
@@ -289,7 +263,15 @@ export function MentorsView() {
       )}
 
       {/* Loading State */}
-      {loading ? (
+      {hackathonsLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : !selectedHackathonId ? (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Select a hackathon to view mentors
+        </Alert>
+      ) : loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
           <CircularProgress />
         </Box>
@@ -340,7 +322,7 @@ export function MentorsView() {
         }}
         onSubmit={handleFormSubmit}
         mentor={editingMentor}
-        websiteId={selectedHackathonId}
+        websiteId={selectedHackathonId || ''}
         loading={formLoading}
       />
 
