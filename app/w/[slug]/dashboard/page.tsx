@@ -65,7 +65,6 @@ const DashBoardParticipant = () => {
   const slug = params?.slug as string;
   const [showCopiedPopup, setShowCopiedPopup] = useState(false);
   const [hackathonId, setHackathonId] = useState<number | null>(null);
-  const [isJudge, setIsJudge] = useState(false);
   // Group state (keep for now, but focus on user details)
   const [group, setGroup] = useState<{
     name: string;
@@ -82,7 +81,7 @@ const DashBoardParticipant = () => {
   const [groupCode, setGroupCode] = useState("");
   const [error, setError] = useState("");
 
-  // Fetch hackathon info and check if user is a judge
+  // Fetch hackathon info
   useEffect(() => {
     const fetchHackathonInfo = async () => {
       try {
@@ -223,20 +222,6 @@ const DashBoardParticipant = () => {
                 Submit Project
               </Button>
             </Link>
-            <Link href={`/w/${slug}/dashboard/judging`}>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Iconify icon="mdi:trophy" width={16} />
-                Leaderboard
-              </Button>
-            </Link>
-            {isJudge && (
-              <Link href={`/w/${slug}/dashboard/judge`}>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Iconify icon="mdi:gavel" width={16} />
-                  Judge Dashboard
-                </Button>
-              </Link>
-            )}
           </Stack>
         </Card>
 

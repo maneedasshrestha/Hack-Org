@@ -206,12 +206,6 @@ function HackathonTemplate({ data, slug }: { data: HackathonWebsiteData; slug: s
               >
                 FAQ
               </button>
-              <Link
-                href={`/w/${slug}/dashboard/judging`}
-                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                Leaderboard
-              </Link>
             </div>
 
             {/* Right: Register Button (Desktop) */}
@@ -272,12 +266,6 @@ function HackathonTemplate({ data, slug }: { data: HackathonWebsiteData; slug: s
               >
                 FAQ
               </button>
-              <Link
-                href={`/w/${slug}/dashboard/judging`}
-                className="block w-full text-left px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Leaderboard
-              </Link>
               <div className="px-3 py-2">
                 <Button
                   size="sm"

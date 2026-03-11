@@ -9,11 +9,8 @@ import CardHeader from "@mui/material/CardHeader";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
 import { Label } from "@/components/label";
 import { Iconify } from "@/components/iconify";
-import { fDate } from "@/app/utils/format-time";
 
 // ----------------------------------------------------------------------
 
@@ -131,20 +128,6 @@ export function HackathonList({
                   </Box>
                 }
               />
-
-              {/* Judging Quick Link */}
-              <Tooltip title="Manage Judging">
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(`/w/${hackathon.website?.slug}/dashboard/judging`, "_blank");
-                  }}
-                  sx={{ ml: 1 }}
-                >
-                  <Iconify icon="mdi:gavel" width={20} />
-                </IconButton>
-              </Tooltip>
             </ListItemButton>
           ))}
         </Box>
